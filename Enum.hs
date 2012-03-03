@@ -421,6 +421,7 @@ to15Tuple
           (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o)
 
 
+from2Tuple (a,b) = (Jst a, Jst b)
 from3Tuple (a,b,c) = ((Jst a, Jst b), Jst c)
 from4Tuple (a,b,c,d) = (((Jst a,Jst b),Jst c),Jst d)
 from5Tuple (a,b,c,d,e) = ((((Jst a,Jst b),Jst c),Jst d),Jst e)
@@ -446,8 +447,16 @@ instance (Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b) => Enum (a, b) where
 
   succ (x,y) | (x,y) == maxBound
                 = error "Enum.succ{(a,b)}: tried to take `succ' of maxBound"
-             | otherwise = to2Tuple $ succ2 (fromEnum y) True (Jst x,Jst y)
-
+             | otherwise = to2Tuple $
+                           findNext (fromEnum (mb (Jst x)), fromEnum (mb (Jst y))) $
+                             succ2 (fromEnum y) True (from2Tuple (x,y))
+   where
+    findNext :: ( Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b)
+                => (Int,Int) -> (J a, J b) -> (J a, J b)
+    findNext (bx,by) (x,y) = if (not (isJst x)) || (not (isJst y))
+                             then findNext (bx,by) $ toBounded (bx,by) $ succ2 (getInt y) True (x,y)
+                             else (x,y)
+    toBounded (bx,by) (jx,jy) = ( ib jx bx, ib jy by )
 
   pred (x,y) | (x,y) == (minBound,minBound) = error "Enum.pred{(a,b)}: tried to take `pred' of minBound"
              |    y  ==           minBound  = (minBound, toEnum (fx-1))
@@ -1497,13 +1506,3 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
   fromEnum (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) =
          fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e, fromEnum f, fromEnum g,
              fromEnum h, fromEnum i, fromEnum j, fromEnum k, fromEnum l, fromEnum m, fromEnum n, fromEnum o]
-
-
--- data Strategy f g = Strategy f g
--- instance Enum g => Enum (Strategy f g) where
-
--- combinator library ?
--- stategies inside a plane?  tuple position that the tuple increases
--- fixing a digit / changing the speed
--- to make the upper enumeration into an ordering
-
