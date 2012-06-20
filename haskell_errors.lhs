@@ -113,7 +113,7 @@ Just 1
 \end{Verbatim}
 You could implement safe versions of other unsafe functions in the same way, but there's no need to: there already is a library called \verb+safe+~\cite{he:safe}, which provides different safe versions of originally unsafe functions.
 
-Let's recall the not-in-scope error that we saw earlier. It was caused by using a function which didn't exist. Another common situation in which this error arises is when you use an existing function, but fail to import it. Let's look at a~simple piece of code in which a~different name is given to an already existing function:
+Let's recall the not-in-scope error that we saw earlier. It was caused by using a~function which didn't exist. Another common situation in which this error arises is when you use an existing function, but fail to import it. Let's look at a~simple piece of code in which a~different name is given to an already existing function:
 
 \begin{Verbatim}
 module Main where
@@ -234,7 +234,7 @@ fromInteger :: Num a => Integer -> a
 \end{Verbatim}
 This means that \verb+fromInteger+ takes an \verb+Integer+ and returns a~value of \emph{any} type \verb+a+, with a~restriction that the type \verb+a+ belongs to the \verb+Num+ type class. What type exactly should be returned? That depends on the context in which \verb+fromInteger+ was applied. For example, if the return value is required to be \verb+Int+ then the implementation of \verb+fromInteger+ defined in the \verb+Num Int+ instance declaration is called. That specific implementation returns a value of type \verb+Int+. This mechanism allows integer literal to become an instance of a type belonging to \verb+Num+ type class.
 
-With this knowledge, we can go back to our example in which integer literal \verb+1+ was used as a~parameter to \verb+(&&)+ function. This function takes two \verb+Bool+ parameters and returns a~single \verb+Bool+:
+With this knowledge, we can go back to our example in which integer literal \verb+1+~was used as a~parameter to \verb+(&&)+ function. This function takes two \verb+Bool+ parameters and returns a~single \verb+Bool+:
 
 \begin{Verbatim}
 ghci> :t (&&)
@@ -327,7 +327,7 @@ Failed, modules loaded: none.
 \caption{Comparing two different instances of \verb+Eq+ type class.}\label{l:rigid_types}
 \end{listing}
 \noindent
-The error message is shown in Listing~\ref{l:rigid_types}. The \verb+(b ~ a)+ notation indicates equality of the types \verb+a+ and \verb+b+. The compiler uses this notation to say \verb+Could not deduce (b ~ a)+, which means that \verb+a+ and \verb+b+ should be identical, but the type definition we provided does not guarantee it. The requirement of types \verb+a+ and \verb+b+ being of the same type is a~direct consequence of a~type signature of \verb+(==)+ which, as we recall, requires its parameters to be of the same type. The term \verb+rigid type variable+ indicates that our types \verb+a+ and \verb+b+ have been directly specified by the type annotation~\cite{he:pj} and the compiler is not free to unify them\footnote{Unification of two types means that they are assumed to be the same type.}. We have already seen a correct version of this code, but we can also make it work in a~different way:
+The error message is shown in Listing~\ref{l:rigid_types}. The \verb+(b ~ a)+ notation indicates equality of the types \verb+a+ and \verb+b+. The compiler uses this notation to say \verb+Could+ \verb+not+ \verb+deduce+ \verb+(b ~ a)+, which means that \verb+a+ and \verb+b+ should be identical, but the type definition we provided does not guarantee it. The requirement of types \verb+a+ and \verb+b+ being of the same type is a~direct consequence of a~type signature of \verb+(==)+ which, as we recall, requires its parameters to be of the same type. The term \verb+rigid type variable+ indicates that our types \verb+a+ and \verb+b+ have been directly specified by the type annotation~\cite{he:pj} and the compiler is not free to unify them\footnote{Unification of two types means that they are assumed to be the same type.}. We have already seen a correct version of this code, but we can also make it work in a~different way:
 
 \begin{Verbatim}
 {-# LANGUAGE TypeFamilies #-}
@@ -461,15 +461,8 @@ Another common error related to types is type ambiguity. I'll demonstrate it usi
 ghci> read "5.0" :: Double
 5.0
 \end{Verbatim}
-It is important to provide correct type signature:
 
-\begin{Verbatim}
-ghci> read "5.0" :: Int
-*** Exception: Prelude.read: no parse
-\end{Verbatim}
-This code produces an exception because implementation of \verb+read+ for \verb+Int+ instances of \verb+Read+ doesn't expect any decimal signs.
-
-\begin{listing}[h]
+\begin{listing}[t]
 \begin{Verbatim}
 ghci> read "5.0"
 
@@ -483,8 +476,18 @@ ghci> read "5.0"
 \end{Verbatim}
 \caption{Type ambiguity.}\label{l:ambiguity}
 \end{listing}
+\noindent
+It is important to provide correct type signature:
 
-The type system can come into play in very unexpected moments. Let's play a little bit with \verb+id+, the identity function, which returns any parameter passed to it:
+\begin{Verbatim}
+ghci> read "5.0" :: Int
+*** Exception: Prelude.read: no parse
+\end{Verbatim}
+
+\noindent
+This code produces an exception because implementation of \verb+read+ for \verb+Int+ instances of \verb+Read+ doesn't expect any decimal signs.
+
+The type system can come into play in very unexpected moments. Let's play a~little bit with \verb+id+, the identity function, which returns any parameter passed to it:
 
 \begin{Verbatim}
 ghci> id 1
@@ -544,7 +547,7 @@ ghci> id - id
 \caption{Another \verb+No instance for (Num (Int -> Int))+ error.}\label{l:nif}
 \end{listing}
 \section{Some runtime errors}
-We finally managed to get past the compilation errors. It was a lot of work, probably more than in other programming languages. That's another characteristic feature of Haskell: the strong type system moves much of the program debugging up front, into the compilation phase. You probably already heard that once a Haskell program compiles it usually does what the programmer intended. That's mostly true, but this doesn't mean that there are no runtime errors in Haskell. This section will discuss some of them.
+We finally managed to get past the compilation errors. It was a~lot of work, probably more than in other programming languages. That's another characteristic feature of Haskell: the strong type system moves much of the program debugging up front, into the compilation phase. You probably already heard that once a~Haskell program compiles it usually does what the programmer intended. That's mostly true, but this doesn't mean that there are no runtime errors in Haskell. This section will discuss some of them.
 
 Runtime errors in Haskell most often take the form of runtime exceptions. At the very beginning of this paper, I showed you that some functions don't work for all possible inputs and can raise an exception:
 
@@ -552,7 +555,7 @@ Runtime errors in Haskell most often take the form of runtime exceptions. At the
 ghci> head []
 *** Exception: Prelude.head: empty list
 \end{Verbatim}
-In languages like Java, exceptions are your friend. They provide a stack trace that allows to investigate the cause of an error. It is not that easy in Haskell. Runtime exceptions don't give you any stack trace, as this is not easily implemented in a language with lazy evaluation. You are usually left only with a short error message and line number.
+In languages like Java, exceptions are your friend. They provide a~stack trace that allows to investigate the cause of an error. It is not that easy in Haskell. Runtime exceptions don't give you any stack trace, as this is not easily implemented in a~language with lazy evaluation. You are usually left only with a~short error message and line number.
 
 One of the most commonly made errors resulting in runtime exceptions is non-exhaus\-tive patterns in constructs like function definitions or guards. Let's recall \verb+safeHead+ function that we've written in the first section:
 
