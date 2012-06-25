@@ -35,6 +35,9 @@
 \title{\TMR\ The MapReduce type of a Monad}
 \author{Julian Porter \\ julian.porter@@porternet.org}
 
+\newcommand{\authornote}[3]{{\color{#2} {\sc #1}: #3}}
+\newcommand\ezy[1]{\authornote{edward}{blue}{#1}}
+
 \numbersoff
 
 \begin{document}
@@ -55,7 +58,7 @@
 \newcommand\bnd[1][]{\mathbin{\bind_{#1}}}
 
 \begin{introduction}
-\par MapReduce is a popular paradigm for distributed computing.  It consists of stages in which lists of key / data pairs are sorted on the key value and then each chunk is passed to a transformation function.  The resulting key / data pairs are accumulated and passed to the next phase.
+\par MapReduce is a popular paradigm for distributed computing.  It consists of stages in which lists of key/value pairs are sorted on the key value and then each chunk is passed to a transformation function.  The resulting key/value pairs are accumulated and passed to the next phase.
 
 \par In this paper we build on our earlier paper \cite{monad}, where we showed that MapReduce can be implemented as a kind of monad, with |>>=| corresponding to the composition of processing steps, and demonstrated a simple application (word count).  Here we show how this can be seen as the result of applying a general monad transformer to the List monad.
 
@@ -67,16 +70,16 @@
 \section{The idea}
 \subsection{MapReduce in a nutshell}
 
-\par We start with a brief summary of the MapReduce algorithm.  MapReduce deals with data consisting of lists of key / value pairs, and processes it using a cluster of $N$ processing nodes and one control node.  A MapReduce algorithm consists of a number of repetitions of a basic processing step, which has two parts:
+\par We start with a brief summary of the MapReduce algorithm.  MapReduce deals with data consisting of lists of key/value pairs, and processes it using a cluster of $N$ processing nodes and one control node.  A MapReduce algorithm consists of a number of repetitions of a basic processing step, which has two parts:
 
 \begin{enumerate}
-\item \textbf{Map}. The control node distributes a list of values randomly between the processing nodes.  Each processing node applies a function called a \textit{mapper} to its list and produces a new list of key / value pairs.
+\item \textbf{Map}. The control node distributes a list of values randomly between the processing nodes.  Each processing node applies a function called a \textit{mapper} to its list and produces a new list of key/value pairs.
 \item \textbf{Reduce}. The control node gathers the outputs from each of the control nodes, concatenates them and sorts the resulting list on the key.  It divides the sorted list into chunks, each one consisting of records for one specific value of the key, and distributes the chunks amount the processing nodes.  The values from a chunk are used as input to a function called a \textit{reducer}, which produces yet a list of value pairs.
 \end{enumerate}
 
 \noindent The control node then concatenates these output lists and proceeds to use them as input to the Map part of the next stage of processing. 
 
-\par Observe that we can simplify this, by making Reduce produce not just values, but key / value pairs with random keys.  Then the distribution of values among processing nodes in Map is precisely the distribution algorithm used in Reduce.  Therefore we can treat Map and Reduce as being two instances of the same basic processing stage. 
+\par Observe that we can simplify this, by making Reduce produce not just values, but key/value pairs with random keys.  Then the distribution of values among processing nodes in Map is precisely the distribution algorithm used in Reduce.  Therefore we can treat Map and Reduce as being two instances of the same basic processing stage. 
 
 \subsection{Generalising MapReduce} 
 
@@ -84,9 +87,9 @@
 \begin{spec}
 f :: a -> [(x,a)] -> [(y,b)]
 \end{spec}
-where |x| and |y| are value types and |a| and |b| are key types.  To explain this: the first argument is the key value that selects a chunk of data and the second argument is the data, consisting of key / value pairs.  The function therefore corresponds to selecting a key, extracting the corresponding values and applying a mapper or reducer to them.
+where |x| and |y| are value types and |a| and |b| are key types.  To explain this: the first argument is the key value that selects a chunk of data and the second argument is the data, consisting of key/value pairs.  The function therefore corresponds to selecting a key, extracting the corresponding values and applying a mapper or reducer to them.
 
-\par The mapper and reducer transform lists of values into lists of key / value pairs, and so  look like
+\par The mapper and reducer transform lists of values into lists of key/value pairs, and so  look like
 \begin{spec}
 [x] -> [(y,b)]
 \end{spec}
@@ -200,7 +203,7 @@ wrap' f = (\k -> MR (g k))
         where
         g k kds = f $ snd <$> filter (\kd -> k == fst kd) kds
 \end{spec}
-\noindent As can be seen it selects the key / value records in |kds| whose key is |k|, extracts their values and then pushes the resulting list through |f|.
+\noindent As can be seen it selects the key/value records in |kds| whose key is |k|, extracts their values and then pushes the resulting list through |f|.
 
 \section{MapReduce as a monad transformer}
 
@@ -262,7 +265,7 @@ which are natural generalisations of the standard monadic laws.  Any attempt at 
 dedupe :: (Eq a) => MapReduceT [] (a,x) (a,x)
 dedupe = MR (nubBy (\ kd kd' -> fst kd == fst kd'))
 \end{spec}
-\noindent Clearly |dedupe| takes a list of key / value pairs and returns a list with one pair per unique key (whose value is ill-defined but irrelevant).  If we wanted to be really rigorous we could amend the definition to read
+\noindent Clearly |dedupe| takes a list of key/value pairs and returns a list with one pair per unique key (whose value is ill-defined but irrelevant).  If we wanted to be really rigorous we could amend the definition to read
 \begin{spec}
 dedupe'  :: (Eq a) => MapReduceT [] (a,Maybe x) (a,Maybe x)
 dedupe'  = MR (\vks -> second (const Nothing) <$> (nubBy (\ kd kd' -> fst kd == fst kd')) vks)
