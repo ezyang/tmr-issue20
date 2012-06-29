@@ -58,28 +58,26 @@
 \newcommand\bnd[1][]{\mathbin{\bind_{#1}}}
 
 \begin{introduction}
-\par MapReduce is a popular paradigm for distributed computing.  It consists of stages in which lists of key/value pairs are sorted on the key value and then each chunk is passed to a transformation function.  The resulting key/value pairs are accumulated and passed to the next phase.
+\par MapReduce is a popular paradigm for distributed computing.  \ezy{you need more connective text here} It consists of stages in which lists of key/value pairs are sorted on the key value and then each chunk \ezy{define chunk, or use more words} is passed to a transformation function.  The resulting key/value pairs are accumulated \ezy{define accumulated (since I don't think it's the traditional recursive accumulator meaning} and passed to the next phase. \ezy{Alternatively, use less detail here, and rely on the section MapReduce in a nutshell}
 
-\par In this paper we build on our earlier paper \cite{monad}, where we showed that MapReduce can be implemented as a kind of monad, with |>>=| corresponding to the composition of processing steps, and demonstrated a simple application (word count).  Here we show how this can be seen as the result of applying a general monad transformer to the List monad.
+\par In this paper, we build on our earlier paper \cite{monad}, where we showed that MapReduce can be implemented as a kind of monad, with |>>=| corresponding to the composition of processing steps, and demonstrated a simple application (word count).  Here we show how this can be seen as the result of applying a general monad transformer to the List monad. \ezy{This is not quite right, because we only manage a quasi-monad, not a monad.}  Finally, we show that the familiar Haskell State monad can be seen as equivalent to the MapReduce type associated to the reader monad, of functions |s -> a| for fixed |s|.  This raises the question of how many other applications, apart from the obvious one of MapReduce itself, this transformer might have.
 
-\par In the final section we show that the familiar Haskell State monad can be seen as being equivalent to the MapReduce type associated to the very simple monad of functions |s -> a| for fixed |s|.  This raises the question of how many other applications, apart from the obvious one of MapReduce itself, this transformer might have.
-
-\par All of the ideas described in this paper have been implemented, and we have successfully demonstrated a MapReduce application using the transformed List monad to represent MapReduce.  A DARCS repository containing the code may be found at \cite{repository}.
+\par All of the ideas described in this paper have been implemented, and we have successfully demonstrated a MapReduce application using the transformed List monad to represent MapReduce.  A DARCS repository containing the code may be found at \cite{repository}.  \ezy{This intro is on the longer side.}
 \end{introduction}
-  
+
 \section{The idea}
 \subsection{MapReduce in a nutshell}
 
-\par We start with a brief summary of the MapReduce algorithm.  MapReduce deals with data consisting of lists of key/value pairs, and processes it using a cluster of $N$ processing nodes and one control node.  A MapReduce algorithm consists of a number of repetitions of a basic processing step, which has two parts:
+\par We start with a brief summary of the MapReduce algorithm.  MapReduce takes a list of key/value pairs and processes them using a cluster of many processing nodes and one control node.  A MapReduce algorithm consists of a number of repetitions of a basic processing step, which has two parts:
 
 \begin{enumerate}
-\item \textbf{Map}. The control node distributes a list of values randomly between the processing nodes.  Each processing node applies a function called a \textit{mapper} to its list and produces a new list of key/value pairs.
-\item \textbf{Reduce}. The control node gathers the outputs from each of the control nodes, concatenates them and sorts the resulting list on the key.  It divides the sorted list into chunks, each one consisting of records for one specific value of the key, and distributes the chunks amount the processing nodes.  The values from a chunk are used as input to a function called a \textit{reducer}, which produces yet a list of value pairs.
+\item \textbf{Map}. The control node distributes the list of values randomly between the processing nodes.  Each processing node applies a function called a \textit{mapper} to its values and produces a new list of key/value pairs.
+\item \textbf{Reduce}. The control node gathers the outputs from each of the control \ezy{processing?} nodes, concatenates them and sorts the resulting list by the key.  It divides the sorted list into chunks with equal keys and distributes the chunks among the processing nodes.  The values from a chunk are used as input to a function called a \textit{reducer}, which produces yet another list of key/value pairs. \ezy{The flow of control here is a little garbled.  For example, it sort of sounds like you've repeated what the control node does in both bullets; if that's not the case, then I don't understand how this works.}
 \end{enumerate}
 
-\noindent The control node then concatenates these output lists and proceeds to use them as input to the Map part of the next stage of processing. 
+\noindent The control node then concatenates these output lists and proceeds to use them as input to the Map part of the next stage of processing.
 
-\par Observe that we can simplify this, by making Reduce produce not just values, but key/value pairs with random keys.  Then the distribution of values among processing nodes in Map is precisely the distribution algorithm used in Reduce.  Therefore we can treat Map and Reduce as being two instances of the same basic processing stage. 
+\par Observe that we can simplify this, by making Reduce produce not just values, but key/value pairs with random keys. \ezy{I corrected ``value pairs'' above to ``key/value pairs'', but it seems in light of this sentence that may not be correct.}  Then the distribution of values among processing nodes in Map is precisely the distribution algorithm used in Reduce.  Therefore. we can treat Map and Reduce as being two instances of the same basic processing stage.
 
 \subsection{Generalising MapReduce} 
 
@@ -87,9 +85,9 @@
 \begin{spec}
 f :: a -> [(x,a)] -> [(y,b)]
 \end{spec}
-where |x| and |y| are value types and |a| and |b| are key types.  To explain this: the first argument is the key value that selects a chunk of data and the second argument is the data, consisting of key/value pairs.  The function therefore corresponds to selecting a key, extracting the corresponding values and applying a mapper or reducer to them.
+where |x| and |y| are value types and |a| and |b| are key types.  The first argument is the key value that selects a chunk of data and the second argument is the data, consisting of key/value pairs.  The function therefore corresponds to selecting a key, extracting the corresponding values and applying a mapper or reducer to them.
 
-\par The mapper and reducer transform lists of values into lists of key/value pairs, and so  look like
+\par The mapper and reducer transform lists of values into lists of key/value pairs
 \begin{spec}
 [x] -> [(y,b)]
 \end{spec}
@@ -102,11 +100,11 @@ wrap :: ([x] -> [(y,b)]) -> a -> [(x,a)] -> [(y,b)]
 \begin{spec}
 [(x,a)]->[(y,b)]
 \end{spec}
-where |x|, |y|, |a|, and |b| are as above.  Applying a mapper or reducer to the output of a MapReduce process gives another MapReduce process, so the act of adding a new stage to the end of a chain of processing can be described as
+where |x|, |y|, |a|, and |b| are as above. \ezy{I kind of wonder why the key type has to be polymorphic}  Applying a mapper or reducer to the output of a MapReduce process gives another MapReduce process, so the act of adding a new stage to the end of a chain of processing can be described as
 \begin{spec}
 ([(x,a)]->[(y,b)]) -> (b -> [(y,b)] -> [(z,c)]) -> [(x,a)] -> [(z,c)]
 \end{spec}
-where |z| is a value type and |c| is a key type, where the existing process is the first argument, the additional stage is the second, and the resulting combined process is the output. This is the signature of a monadic bind where the underlying type is a function |([(a,x)] -> [(b,y)])|. Therefore, MapReduce can be expressed as
+where |z| is a value type and |c| is a key type, where the existing process is the first argument, the additional stage is the second, and the resulting combined process is the output. This looks like the signature of a monadic bind where the underlying type is a function |([(a,x)] -> [(b,y)])|. Therefore, MapReduce can be expressed as
 \begin{spec}
 ... !>>= wrap map !>>= wrap reduce !>>= ...
 \end{spec}
@@ -127,17 +125,17 @@ return  :: t -> m t t
 (>>=)   :: m t u -> (u -> m u v) -> m u v
 \end{spec}
 
-\par We need one further generalisation.  As we will see below, the structure we will define obeys natural generalisations of the first two monad laws, but the third breaks down.  The third monad law is
+\par We need one further generalisation.  The structure we will define obeys natural generalisations of the first two monad laws, but the third breaks down.  The third monad law is
 \begin{spec}
 (x >>= f) >>= g == x >>= (\y -> f y >>= g)
 \end{spec}
 To see why it must break down, let us se how we could interpret this in terms of the model set out above, where |x| is a MapReduce process and |f| and |g| correspond to individual stages.  
 
-\par The left hand side is obvious: |x| is a process to which we append first the stage |f| and then the stage |g|.  On the right hand side we have |\y -> f y !>>= g| which is the concatenation of two stages, but we cannot append |g| to |f| until we know what the output of |f| is, because a critical part of appending a stage to a process is dividing the process' output into chunks based on their key.  So for MapReduce, |\y -> f y !>>= g| is meaningless: the only meaningful order in which to apply stages is one at a time starting from the left:
+\par The left hand side has obvious meaning: |x| is a process to which we append first the stage |f| and then the stage |g|.  On the right hand side we have |\y -> f y !>>= g| which is the concatenation of two stages, but we cannot append |g| to |f| until we know what the output of |f| is, because a critical part of appending a stage to a process is dividing the process' output into chunks based on their key.  So for MapReduce, |\y -> f y !>>= g| is meaningless: the only meaningful order in which to apply stages is one at a time starting from the left:
 \begin{spec}
 (((x !>>= f) !>>= g) !>>= h) !>>= ...
 \end{spec}
-Thus we cannot expect MapReduce to obey the third monad law, because of the sorting and partitioning on keys that is a fundamental part of the algorithm.  
+\ezy{That is to say, stages cannot be composed together?} Thus, we cannot expect MapReduce to obey the third monad law, because of the sorting and partitioning on keys that is a fundamental part of the algorithm.  
 
 \par Looking at this another way, we can, of course, combine two stages, but the resulting entity is not itself a stage.  A single stage sorts on the key, passes the resulting chunks through a function, then recombines the result, represented by this data-flow pattern:
 \begin{equation*}
@@ -165,13 +163,13 @@ then it would not be anything that could be composed with |x| via |!>>=|, so
 \begin{spec}
 x !>>= (\y -> f y !>>= g)
 \end{spec}
-is meaningless.  Sorting on keys therefore makes it impossible that MapReduce could obey the third monad law.  As we will see below, in generalisations of MapReduce, sorting (and its generalisations) presents an insurmountable barrier to any extension of the third law.
+is meaningless.  Sorting on keys therefore makes it impossible that MapReduce could obey the third monad law.  As we will see below, \ezy{when we do what?} in generalisations of MapReduce, sorting (and its generalisations) presents an insurmountable barrier to any extension of the third law.
 
-\par Therefore we coin the term \textbf{quasi-monad} to indicate an object that has monadic operations and obeys natural generalisations of the first two monad laws, but does not obey the third law.  We have just seen that any complex stage-based distributed algorithm must fail to obey the third law, and so is at most a quasi-monad.  In fact, MapReduce is a two-parameter quasi-monad:
+\par Therefore, we coin the term \textbf{quasi-monad} to indicate an object that has monadic operations and obeys natural generalisations of the first two monad laws, but does not obey the third law.  We have just seen that any complex stage-based distributed algorithm must fail to obey the third law, and so is at most a quasi-monad.  In fact, MapReduce is a two-parameter quasi-monad:
 \begin{spec}
 newtype MapReduce x a y b = MR { run :: ([(x,a)] -> [(y,b)]) } 
 \end{spec}
-(Here and in the remainder of this discussion, |x|, |y| and |z| are value types, while |a|, |b| and |c| are key types.  We shall assume that all key types belong to the class |Eq|, which is necessary to enable sorting and partitioning on keys.)  This should remind us of the |State| monad with, as it turns out, good reason.  The monadic operations are:
+(Here and in the remainder of this discussion, |x|, |y| and |z| are value types, while |a|, |b| and |c| are key types. \ezy{Maybe pull this up earlier.}  We shall assume that all key types belong to the class |Eq|, which is necessary to enable sorting and partitioning on keys.)  This should remind us of the |State| monad with, as it turns out, good reason.  The monadic operations are:
 \numberson
 \begin{spec}
 return :: b -> MapReduce x a x b
@@ -194,24 +192,24 @@ fs  = run f kvs
 ks  = nub (fst <$> fs)
 gs  = map g gs
 \end{spec}
-So |fs| is the output of the mapper / reducer, |ks| is the \textit{set} of keys from the output, and |gs| is a set of functions, one per key in the set.  So we have one function per key in the output of |f|.  Then in the |concatMap| we apply each function to the full data set (leaving it to each function to decide what subset of the data to process) and combine the result.
+So |fs| is the output of the mapper/reducer, |ks| is the \textit{set} of keys from the output, and |gs| is a set of functions, one per key in the set.  \ezy{It's more conventional to have |f| be |m| and for |g| to be |f|}  So we have one function per key in the output of |f|.  Then in |concatMap|, we apply each function to the full data set (leaving it to each function to decide what subset of the data to process) and combine the result.
 
-\par They do that with the help of the function |wrap|, which, we recall, takes a key and a function and then applies the function to those records matching the key.  We can now wrote |wrap| as
+\par They do this with the help of the function |wrap|, which, we recall, takes a key and a function and then applies the function to those records matching the key.  We can now write |wrap| as
 \begin{spec}
 wrap' :: ([x] -> [(b,y)]) -> (a -> MapReduce x a y b)
 wrap' f = (\k -> MR (g k))
         where
         g k kds = f $ snd <$> filter (\kd -> k == fst kd) kds
 \end{spec}
-\noindent As can be seen it selects the key/value records in |kds| whose key is |k|, extracts their values and then pushes the resulting list through |f|.
+\noindent As can be seen, it selects the key/value records in |kds| whose key is |k|, extracts their values and then pushes the resulting list through |f|.
 
 \section{MapReduce as a monad transformer}
 
 \subsection{The |MapReduceT| type}
 
-\par |[]| is a monad with |>>= == concatMap|, so |MapReduce| can be thought of as a transformation of the list monad.  It turns out that there is a very natural way of describing a general transformer that will apply to any monad, with |MapReduce| the result of applying it to |[]|.  
+\par |[]| is a monad with |>>= == concatMap|, so |MapReduce| can be thought of as a transformation of the list monad.  It turns out that there is a very natural way of describing a general transformer that will apply to any monad, with |MapReduce| the result of applying it to |[]|.
 
-\par So, let |m| be a monad; then the \textbf{|MapReduceT| type of} |m| is 
+\par So, let |m| be a monad; then the \textbf{|MapReduceT| type of} |m| is
 \begin{spec}
 newtype (Monad m) => MapReduceT m t u = MR { run :: m t -> m u }
 \end{spec}
@@ -228,7 +226,7 @@ In addition, we define the operations:
 (-<)  ::  MapReduceT m t u -> m t -> m u
 (-<) f x   = run f x
 \end{spec}
-These are arrow-like but |MapReduceT m| is not itself an arrow.
+These are arrow-like but |MapReduceT m| is not itself an arrow.  \ezy{Note that |>>>| is just function composition in disguise, and |-<| is just function application in disguise.}
 
 \par Now, if |MapReduceT| is to be a monad transformer, then |MapReduceT m| must be a quasi-monad with a |lift| operation.  The quasi-monadic operations for |MapReduceT m| are:
 \numberson	
@@ -245,18 +243,18 @@ bind p f g  = MR (\xs -> ps xs >>= gs xs)
 \end{spec}
 \numbersreset
 \numbersoff
-\noindent where |>>=| is bind in |m| and |return'| is return in |m|.  If |p :: MapReduceT m u u| define 
+\noindent where |>>=| is bind in |m| and |return'| is return in |m|. If |p :: MapReduceT m u u| define 
 \begin{spec}
 ((bd p)) = bind p
 \end{spec}
-The parameter |p| seems mysterious, and it is not clear why we do not just take |p = MR id|.  The reason is that, in order to generalise MapReduce, we need a way of filtering the output of |f| before passing it to |g|.  So |p| is the equivalent of the |nub . snd <$>| in |!>>=|.
+\ezy{Why the double parens?} The parameter |p| seems mysterious, and it is not clear why we do not just take |p = MR id|.  The reason is that, in order to generalise MapReduce, we need a way of filtering the output of |f| before passing it to |g|.  So |p| is the equivalent of the |nub . snd <$>| in |!>>=|.
 
 \par It can be shown that that |MapReduceT m| obeys natural modifications of the first and second monad laws, but the third law breaks down entirely, as expected.  Subject to the reasonable assumption that |run p $ return' x == return' x|, which is certainly true in all the cases we care about, we have:
 \begin{spec}
 f (bd p) return    == f >>= p
 return x (bd p) f  == return x >>> f (return' x)
 \end{spec}
-which are natural generalisations of the standard monadic laws.  Any attempt at proving an analogue to the third law quickly becomes intractable because the crucial filter function |p| mixes with the monadic functions in complex and confusing ways.
+which are natural generalisations of the standard monadic laws.  Any attempt at proving an analogue to the third law quickly becomes intractable, however, because the crucial filter function |p| mixes with the monadic functions in complex and confusing ways.
 
 \subsection{Equivalence to |MapReduce|}
 
@@ -270,7 +268,7 @@ dedupe = MR (nubBy (\ kd kd' -> fst kd == fst kd'))
 dedupe'  :: (Eq a) => MapReduceT [] (a,Maybe x) (a,Maybe x)
 dedupe'  = MR (\vks -> second (const Nothing) <$> (nubBy (\ kd kd' -> fst kd == fst kd')) vks)
 \end{spec} 
-which makes the output determinate at the price of hugely complicating the proof of equivalence, and adding no meaningful value.  Therefore we stick with |dedupe|.  
+which makes the output determinate at the price of hugely complicating the proof of equivalence and adding no meaningful value.  Therefore we stick with |dedupe|.  
 
 \par Let |x|, |y| and |z| be value types and |a|, |b| and |c| be key types, and set |t = (a,x)|, |u = (b,y)| |v = (c,z)|.  Therefore, trivially, at the level of type definitions
 \begin{spec}
@@ -296,7 +294,7 @@ f !>>= g = MR (\ xs ->
         in
         concatMap (\ k -> (g . fst) k -< fs) ks)  
 \end{spec}
-But in the list monad |xs >>= f = concatMap f xs| so we can write this as:
+But in the list monad |xs >>= f = concatMap f xs|, so we can write this as:
 \begin{spec}
 f !>>= g = MR (\ xs ->
         let
@@ -337,7 +335,7 @@ id    :: Hom a a
 id = H id
 \end{spec}
 
-\par Now consider |MapReduceT (Hom s) b c|, which consists of functions |Hom s b -> Hom s c|.  
+\par \ezy{Hom is the reader monad.} Now consider |MapReduceT (Hom s) b c|, which consists of functions |Hom s b -> Hom s c|.  
 
 \begin{lemma}
 There is a natural map 
@@ -346,7 +344,7 @@ hom::Hom b c -> MapReduceT (Hom s) b c
 \end{spec}
 Such that
 \begin{spec}
-(hom q) (bdfh p) (hom r) == hom $ ( q >>> p) (bdf H) (q >>> r)
+(hom q) (bdfh p) (hom r) == hom $ (q >>> p) (bdf H) (q >>> r)
 \end{spec}
 \end{lemma}
 \begin{proof}
@@ -465,7 +463,7 @@ and so the two sides do have the same type.
 
 \subsection{Implementation}
 
-\par We have implemented |MapReduce| and |MapReduceT| as simple libraries, and implemented a simple test application using the standard word-count MapReduce algorithm (see \cite{repository}).  It turns out that swapping out |MapReduce| and replacing it with |MapReduceT []| has no effect on the output.  Practical results therefore bear out the theoretical equivalence proved above.
+\par We have implemented |MapReduce| and |MapReduceT| as simple libraries and implemented a simple test application using the standard word-count MapReduce algorithm (see \cite{repository}).  It turns out that swapping out |MapReduce| and replacing it with |MapReduceT []| has no effect on the output.  Practical results therefore bear out the theoretical equivalence proved above.
 
 \subsection{Future directions}
 
