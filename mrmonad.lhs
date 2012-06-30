@@ -247,7 +247,7 @@ bind p f g  = MR (\xs -> ps xs >>= gs xs)
 \begin{spec}
 ((bd p)) = bind p
 \end{spec}
-\ezy{Why the double parens?} The parameter |p| seems mysterious, and it is not clear why we do not just take |p = MR id|.  The reason is that, in order to generalise MapReduce, we need a way of filtering the output of |f| before passing it to |g|.  So |p| is the equivalent of the |nub . snd <$>| in |!>>=|.
+The parameter |p| seems mysterious, and it is not clear why we do not just take |p = MR id|.  The reason is that, in order to generalise MapReduce, we need a way of filtering the output of |f| before passing it to |g|.  So |p| is the equivalent of the |nub . snd <$>| in |!>>=|.
 
 \par It can be shown that that |MapReduceT m| obeys natural modifications of the first and second monad laws, but the third law breaks down entirely, as expected.  Subject to the reasonable assumption that |run p $ return' x == return' x|, which is certainly true in all the cases we care about, we have:
 \begin{spec}
