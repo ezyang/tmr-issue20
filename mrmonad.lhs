@@ -1,4 +1,5 @@
-
+% -*- LaTeX -*-
+\documentclass{tmr}
 
 %include lhs2TeX.fmt
 %include polycode.fmt
@@ -55,9 +56,9 @@
 \newcommand\bnd[1][]{\mathbin{\bind_{#1}}}
 
 \begin{introduction}
-\par MapReduce is a popular paradigm for distributed computing that is particularly important as a framework for massively parallel computation.  Many existing algorithms have been recast in terms of MapReduce, and new algorithms are being discovered.  The MapReduce framework imposes a fixed structure on algorithms: they consist of one or more stages, which are executed in series.  Each stage takes as input a list of key / value pairs and produces as output another such list.  In each stage the input key/value pairs are sorted on the key value and divided into chunks, one per key value.  Each chunk is passed to a transformation function.  The resulting key/value pairs are gathered together and output as a list which can be passed to the next stage.
+\par MapReduce is a popular paradigm for distributed computing that is particularly important as a framework for massively parallel computation.  Many existing algorithms have been recast in terms of MapReduce, and new algorithms are being discovered in the paradigm.  The MapReduce framework imposes a fixed structure on algorithms: they consist of one or more stages, which are executed in series.  Each stage takes as input a list of key/value pairs and produces as output another such list.  In each stage, the input key/value pairs are sorted on the key value and divided into chunks, one per key value.  Each chunk is passed to a transformation function.  The resulting key/value pairs are gathered together and output as a list which can be passed to the next stage.
 
-\par In this paper, we build on our earlier paper \cite{monad}, where we showed that MapReduce can be implemented as a kind of monad, with |>>=| corresponding to the composition of processing steps, and demonstrated a simple application (word count).  Here we show how this can be seen as the result of applying a general transformation, which is a kind of monat transformer, to the List monad.  Finally, we show that the familiar Haskell State monad can be seen as equivalent to the MapReduce type associated to the reader monad, of functions |s -> a| for fixed |s|.  This raises the question of how many other applications, apart from the obvious one of MapReduce itself, this transformer might have.
+\par In this paper, we build on our earlier paper \cite{monad}, where we showed that MapReduce can be implemented as a kind of monad, with |>>=| corresponding to the composition of processing steps, and demonstrated a simple application (word count).  Here we show how this can be seen as the result of applying a general transformation, which is a kind of monad transformer, to the List monad.  Finally, we show that the familiar Haskell State monad can be seen as equivalent to the MapReduce type associated to the reader monad, of functions |s -> a| for fixed |s|.  This raises the question of how many other applications, apart from the obvious one of MapReduce itself, this transformer might have.
 
 \par All of the ideas described in this paper have been implemented, and we have successfully demonstrated a MapReduce application using the transformed List monad to represent MapReduce.  A DARCS repository containing the code may be found at \cite{repository}.
 \end{introduction}
@@ -72,14 +73,14 @@
 \item \textbf{Reduce}. This has three sub-parts:
 \begin{enumerate}
 \item The control node gathers the outputs from each of the processing nodes, concatenates them and sorts the resulting list by the key.  It divides the sorted list into chunks, one per key value and distributes the chunks among processing nodes, each chunk to one node.
-\item Each processing node takes the chunk of key / value pairs it has been passed and uses them as input to a function called a \textit{reducer}.  This produces a list of values. 
+\item Each processing node takes the chunk of key/value pairs it has been passed and uses them as input to a function called a \textit{reducer}.  This produces a list of values. 
 \item The processing nodes return their output lists to the control node, which concatenates them to form a single list of values.
 \end{enumerate}
 \end{enumerate}
 
 \noindent The control node then concatenates these output lists and proceeds to use them as input to the Map part of the next stage of processing.
 
-\par Observe that we if we modify this by making Reduce produce not key / value pairs with random keys, then the random distribution of values among processing nodes in Map can be done with the distribution algorithm used in Reduce.  Therefore. we can treat Map and Reduce as being two instances of the same basic processing stage.
+\par Observe that we if we modify this by making Reduce produce not key/value pairs with random keys, then the random distribution of values among processing nodes in Map can be done with the distribution algorithm used in Reduce.  Therefore. we can treat Map and Reduce as being two instances of the same basic processing stage.
 
 \subsection{Generalising MapReduce} 
 
