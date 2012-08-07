@@ -21,7 +21,8 @@ Enumeration means assigning an integer value to a structure or, looking at the H
 
 The most straight forward way to enumerate tuples is to generate all combinations of elements of (finite) sets like this:
 \begin{Verbatim}
-cartProd (set:sets) = let cp = cartProd sets in [x:xs | x <- set, xs <- cp]
+cartProd (set:sets) = let cp = cartProd sets
+                      in [x:xs | x <- set, xs <- cp]
 cartProd [] = [[]]
 \end{Verbatim}
 This is a Cartesian product in maths, which can be found in the library haskell-for-maths. The exact way how the sets are enumerated does not matter because usually every element is used.
@@ -143,14 +144,14 @@ In order to understand the following code take a look at the right picture  of F
 succ (a,b,c) =
  if c == minBound then
   if b == minBound then
-   if a == minBound then (succ a  , b       , c      ) -- (a,b,c) was (0,0,0)
-                    else (pred a  , succ b  , c      ) --   (b,c) was   (0,0)
-                   else  ( a      , pred b  , succ c ) --      c  was      0
+   if a == minBound then (succ a, b     , c     ) -- (0,0,0)
+                    else (pred a, succ b, c     ) -- (a,0,0)
+                   else  (a     , pred b, succ c) -- (a,b,0)
                  else
  if b == minBound then -- switching to the next hyperplane
- if a == minBound then (toEnum (fc+1), minBound, minBound)--(a,b,c) was (0,0,c)
-                  else (pred a  , toEnum (fc+1), minBound)--  (b,c) was   (0,c)
-                  else (a       , pred b       , succ c ) -- generating diagonals
+ if a == minBound then (toEnum (fc+1), minBound, minBound) -- (0,0,c)
+                  else (pred a  , toEnum (fc+1), minBound) -- (a,0,c)
+                  else (a       , pred b       , succ c )  -- diagonals
   where
     fc = fromEnum c
 \end{Verbatim}
@@ -161,10 +162,11 @@ The line \verb|(toEnum (fc+1), minBound, minBound)| makes a switch to a new hype
   pred (x,y,z) =
    if z == minBound then
     if y == minBound then
-     if x == minBound then error "Enum.pred{(x,y,z)}: tried to take `pred' of minBound"
-                      else (minBound, minBound, toEnum (fx-1)) -- (fy,fz) was (0,0)
-                     else  (succ x  , minBound, toEnum (fy-1)) --     fz  was    0
-                    else   (x       , succ y  , pred z       )
+     if x == minBound then
+       error "Enum.pred{(x,y,z)}: tried to take `pred' of minBound"
+     else (minBound, minBound, toEnum (fx-1)) -- (fy,fz) was (0,0)
+    else  (succ x  , minBound, toEnum (fy-1)) --     fz  was    0
+   else   (x       , succ y  , pred z       )
     where
       fx = fromEnum x
       fy = fromEnum y
@@ -187,10 +189,10 @@ to5Tuple  ((((a,b),c),d),e)  = (a,b,c,d,e)
 Then \verb|succ| can be defined like this:
 \begin{Verbatim}
 succ fz s ((x,y),z)
- | y /= minBound && z == minBound= ((x, pred y), succ z)
- | y == minBound && z == minBound=  (succ fz False (x,y), z)
- | y /= minBound && z /= minBound=((x,pred y), if s then succ z else toEnum (fz+1))
- | y == minBound && z /= minBound=  (succ fz False (x,toEnum fz), minBound)
+ | y /= minBound && z == minBound = ((x, pred y), succ z)
+ | y == minBound && z == minBound = (succ fz False (x,y), z)
+ | y /= minBound && z /= minBound = ((x,pred y), if s then succ z else toEnum (fz+1))
+ | y == minBound && z /= minBound = (succ fz False (x,toEnum fz), minBound)
 \end{Verbatim}
 Here \verb|y| and \verb|z| should be imagined as single values while \verb|x| can be the list-like structure. 
 Unfortunately the upper code gives a type error in Haskell (Occurs check: cannot construct the infinite type: t0 = (t0, a0)), which is understandable because the compiler can't know that this nesting terminates without a termination analyzer. In the expression \verb|((a,b),c)|  the value \verb|a| cannot stand for another tuple \eg \verb|(((d,e),b),c)| and the compiler does not know that we are not constructing an infinite type.
@@ -415,7 +417,8 @@ The library Hasklell-for-maths gives us a function that generates all subsets of
 \begin{Verbatim}
 combinationsOf 0 _ = [[]]
 combinationsOf _ [] = []
-combinationsOf k (x:xs) = map (x:) (combinationsOf (k-1) xs) ++ combinationsOf k xs
+combinationsOf k (x:xs) =
+  map (x:) (combinationsOf (k-1) xs) ++ combinationsOf k xs
 \end{Verbatim}
 
 The following function returns sets of indices to hypertretrahedra where the index specifies in which dimension they were translated.
@@ -427,14 +430,16 @@ intersectionSets = concat $ map (\k -> combinationsOf k [0..4] ) [2..5]
 has the value
 
 \begin{Verbatim}
-[[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4],[0,1,2],[0,1,3],[0,1,4],
-[0,2,3],[0,2,4],[0,3,4],[1,2,3],[1,2,4],[1,3,4],[2,3,4],[0,1,2,3],[0,1,2,4],[0,1,3,4],
-[0,2,3,4],[1,2,3,4],[0,1,2,3,4]].
+[[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4],
+[0,1,2],[0,1,3],[0,1,4],[0,2,3],[0,2,4],[0,3,4],[1,2,3],[1,2,4],
+[1,3,4],[2,3,4],[0,1,2,3],[0,1,2,4],[0,1,3,4],[0,2,3,4],
+[1,2,3,4],[0,1,2,3,4]].
 \end{Verbatim}
 
 If we do an \verb|intersectionTest| with
 \begin{Verbatim}
-intersectionTest = filter (\set -> (length (intersection set)) > 1) intersectionSets
+intersectionTest =
+  filter (\set -> (length (intersection set)) > 1) intersectionSets
 intersection set = intersectAll (map translated set)
 intersectAll set = foldr intersect (head set) (tail set)
 translated dim = map (add5 (tr5 dim 5)) set510
@@ -462,8 +467,9 @@ fe xs start = ( (summedSizes (length xs) s)
                                       else 0
         intersection2 = map (\[x,y] -> inter (xs!!x) (xs!!y) )
                             (combinationsOf 2 [0..((length xs)-1)]))
-        inter (_,b0) (_,b1) = if s > b0 + b1 then summedSizes (length xs) (s-b0-b1)
-                                             else 0
+        inter (_,b0) (_,b1) = if s > b0 + b1
+                                then summedSizes (length xs) (s-b0-b1)
+                                else 0
 \end{Verbatim}
 
 In the upper code we have to introduce the bool argument \verb|start| to cope with a strange effect. Although our experiment showed that there are only intersections of at most 2 hypertetrahedra, this is only true in the beginning. Once we project the tuple to one dimension below, there are more intersections.
