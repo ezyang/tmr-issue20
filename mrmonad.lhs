@@ -50,8 +50,8 @@
 
 
 
-\newcommand\tbind[1][MR]{\accentset{\tiny #1}{\bind}}
-\def\lift{\mathrel{\mathchoice{\LL}{\LL}{\scriptsize\LL}{\tiny\LL}}}
+\newcommand\tbind[1][MR]{\accentset{#1}{\bind}}
+\def\lift{\mathrel{\mathchoice{\LL}{\LL}{\scriptsize\LL}{\LL}}}
 \newcommand\LL[0]{\hspace{0.5em}\makebox[0pt][c]{\raisebox{-1.5pt}{---}}\makebox[0pt][c]{$\wedge$}\hspace{0.5em}}
 \newcommand\bnd[1][]{\mathbin{\bind_{#1}}}
 
