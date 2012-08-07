@@ -18,7 +18,7 @@ clean:
 	rm -f *.log *.aux *.toc *.out *.blg *.bbl *.ptb *~
 	rm -f $(issue).tex
 
-bib : 
+bib : tuples.bib mrmonad.bib haskell_errors.bib
 	bibtex tuples
 	bibtex mrmonad
 	bibtex haskell_errors

@@ -476,6 +476,6 @@ and so the two sides do have the same type.
 
 \par Finally, the concept of the pseudo-monad is surely an interesting generalisation in and of itself.
 
-\bibliography{mrmonad.bib}
+\bibliography{mrmonad}
 
 \end{document}
