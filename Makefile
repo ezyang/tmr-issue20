@@ -1,6 +1,6 @@
 issue = Issue20
 
-texsources = tuples.tex # Editorial.tex
+texsources = tuples.tex mrmonad.lhs haskell_errors.lhs Editorial.tex
 
 default: $(issue).pdf
 

@@ -31,7 +31,7 @@
 \DeclareGraphicsExtensions{png}
 
 \title{\TMR\ The MapReduce type of a Monad}
-\author{Julian Porter \\ julian.porter@@porternet.org}
+\author{Julian Porter\email{julian.porter@@porternet.org}}
 
 \newcommand{\authornote}[3]{{\color{#2} {\sc #1}: #3}}
 \newcommand\ezy[1]{\authornote{edward}{blue}{#1}}
