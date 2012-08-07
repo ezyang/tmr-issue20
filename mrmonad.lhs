@@ -30,8 +30,8 @@
 
 \DeclareGraphicsExtensions{png}
 
-\title{\TMR\ The MapReduce type of a Monad}
 \author{Julian Porter\email{julian.porter@@porternet.org}}
+\title{The MapReduce type of a Monad}
 
 \newcommand{\authornote}[3]{{\color{#2} {\sc #1}: #3}}
 \newcommand\ezy[1]{\authornote{edward}{blue}{#1}}

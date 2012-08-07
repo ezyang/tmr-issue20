@@ -1,6 +1,7 @@
 issue = Issue20
 
-texsources = tuples.tex mrmonad.lhs haskell_errors.lhs Editorial.tex
+lhssources = mrmonad.lhs haskell_errors.lhs
+texsources = tuples.tex mrmonad.tex haskell_errors.tex Editorial.tex
 
 default: $(issue).pdf
 
@@ -18,9 +19,12 @@ clean:
 	rm -f $(issue).tex
 
 bib : 
-#	bibtex mighttpd
+	bibtex tuples
+	bibtex mrmonad
+	bibtex haskell_errors
 
 final : $(issue).pdf bib
+	pdflatex $(issue).tex
 	pdflatex $(issue).tex
 	pdflatex $(issue).tex
 
