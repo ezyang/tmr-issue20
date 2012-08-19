@@ -1,11 +1,14 @@
-module Data.Tuple.Enum (all2s, all3s, all4s, all5s, all6s, all7s, all8s, all9s, all10s )
+module Data.Tuple.Enum (all2s, all3s, all4s, all5s, all6s, all7s, all8s, all9s, all10s,
+                        all11s, all12s, all13s, all14s, all15s, hyperplaneSize, fe, te
+                        )
 where
 import Data.Word
 import Math.Combinat.Numbers
+import qualified Data.Map as Map
+import Data.List
 
 ----------------------------------------------------------------------------------------------------
--- To understand better why this library could be useful for you, read the blog post: ...
--- and see the Monad Reader issue 20
+-- see the Monad Reader issue 20 as a documentation 
 ----------------------------------------------------------------------------------------------------
 
 -- | generate all 2-tuples (of enumerable values) so that the sum of the 2 fromEnum-values is monotonic increasing
@@ -169,6 +172,121 @@ hyperplane dim n = ( (length filtered) - 1, n - (if null filtered then 0 else la
                              | otherwise = []
 
 -----------------------------------------------------------------------------------------------
+-- tests to see how intersections in higher dimensions happen
+-----------------------------------------------------------------------------------------------
+
+set3 s = [ (a,b,c) | (a,b,c) <- (take 5000 (all3s :: [(Word8,Word8,Word8)]) ) , a+b+c <= s]
+set310 = set3 10
+
+set4 s = [ (a,b,c,d) | (a,b,c,d) <- (take 5000 (all4s :: [(Word8,Word8,Word8,Word8)]) ) , a+b+c+d <= s]
+set10 = set4 10
+
+set5 s = [ (a,b,c,d,e) | (a,b,c,d,e) <- (take 5000 (all5s :: [(Word8,Word8,Word8,Word8,Word8)]) ) , a+b+c+d+e <= s]
+set510 = set5 10
+
+
+-- subsets of size k
+combinationsOf 0 _ = [[]]
+combinationsOf _ [] = []
+combinationsOf k (x:xs) = map (x:) (combinationsOf (k-1) xs) ++ combinationsOf k xs
+
+tr5 dim i | dim == 0  = (i,0,0,0,0)
+          | dim == 1  = (0,i,0,0,0)
+          | dim == 2  = (0,0,i,0,0)
+          | dim == 3  = (0,0,0,i,0)
+          | dim == 4  = (0,0,0,0,i)
+
+tr6 dim i | dim == 0  = (0,0,0,0,0)
+          | dim == 1  = (i,0,0,0,0)
+          | dim == 2  = (0,i,0,0,0)
+          | dim == 3  = (0,0,i,0,0)
+          | dim == 4  = (0,0,0,i,0)
+          | dim == 5  = (0,0,0,0,i)
+
+intersectionSets = concat $ map (\k -> combinationsOf k [0..4] ) [2..5]
+intersectionSets2 = concat $ map (\k -> combinationsOf k [0..5] ) [2..5]
+
+intersectAll set = foldr intersect (head set) (tail set)
+intersectAll2 set = foldr intersect (head set) (tail set)
+
+intersection set = intersectAll (map translated set)
+intersection2 set = intersectAll2 (map translated2 set)
+
+translated dim = map (add5 (tr5 dim 2)) set510
+  where add5 (a,b,c,d,e) (f,g,h,i,j) = (a+f,b+g,c+h,d+i,e+j)
+
+translated2 dim = map (add5 (tr6 dim 2)) set510
+  where add5 (a,b,c,d,e) (f,g,h,i,j) = (a+f,b+g,c+h,d+i,e+j)
+
+intersectionTest = filter (\set -> (length (intersection set)) > 1) intersectionSets
+intersectionTest2 = filter (\set -> (length (intersection2 set)) > 1) intersectionSets2
+
+------------------------------------------------------------------------------------------
+-- bounded version of fromEnum (feb)
+-- and some tests to see if it works
+------------------------------------------------------------------------------------------
+
+data Number4 = N0 | N1 | N2 | N3 deriving (Show,Enum,Bounded,Eq)
+
+tuples2 i = take i $ enumFrom (0,0) :: [(Word8,Word8)]
+testFeb2 bx by = [ feb [(fromIntegral x, bx),
+                        (fromIntegral y, by)] True | (x,y) <- tuples2 1000 ,
+                        (fromIntegral x) <= bx, (fromIntegral y) <= by]
+
+tuples3 i = take i $ enumFrom (0,0,0) :: [(Word8,Word8,Word8)]
+testFeb3 bx by bz = [ feb [(fromIntegral x, bx),
+                           (fromIntegral y, by),
+                           (fromIntegral z, bz)] True | (x,y,z) <- tuples3 1000 ,
+                           (fromIntegral x) <= bx, (fromIntegral y) <= by, (fromIntegral z) <= bz]
+
+tuples4 i = take i $ enumFrom (0,0,0,0) :: [(Word8,Word8,Word8,Word8)]
+testFeb4 ba bb bc bd = [ feb [(fromIntegral a, ba),
+                              (fromIntegral b, bb),
+                              (fromIntegral c, bc),
+                              (fromIntegral d, bd) ] True | (a,b,c,d) <- tuples4 2000 ,
+                              (fromIntegral a) <= ba, (fromIntegral b) <= bb,
+							  (fromIntegral c) <= bc, (fromIntegral d) <= bd]
+
+
+feb :: [(Int,Int)] -> Bool -> Int
+feb [(x,b)] _ = x
+feb xs start  = sum (map intersection comb)
+              + recursion
+  where
+    recursion | start = feb xs False
+              | d > 0 = feb (tail xs) False -- start == False && d>0
+              | otherwise = 0
+    ys = map fst xs
+    bs = map snd xs
+    l = (length ys) - 1        -- 2
+    d | start = l              -- 2
+      | otherwise = l-1
+    s  = foldr (+) 0 ys        -- 6
+    s2 = foldr (+) 0 (tail ys) -- 4
+    comb :: [[Int]]                   -- [[],[0],[1],[2],[0,1],[0,2],[1,2]]
+    comb | start     = concat $ map (\x -> combinationsOf x [0..l]) [0..2] 
+         | otherwise = concat $ map (\x -> combinationsOf x [0..l]) [0..l]
+    intersection ts = addOrSub * tbs
+      where
+        tbs | start       = if s -sumBs      > 0 then summedSizes d (s-sumBs)       else 0
+            | 0 `elem` ts = if s3-sumSpecial > 0 then summedSizes d (s3-sumSpecial) else 0
+            | otherwise   = if s2-sumBs      > 0 then summedSizes d (s2-sumBs)      else 0
+        sumBs | null ts = 0
+              | otherwise = sum (map (\x -> x + 1) (map (bs!!) ts))
+        sumSpecial = sum (map tetra ts)
+        tetra 0 = 0 -- because the special tetrahedron starts at 0
+        tetra i = (bs!!i)+1
+        specialTetra = s - (head bs) -- size of special tetrahedron (begins a zero)
+        s3 | s2 <= specialTetra = s2
+           | otherwise          = specialTetra
+        addOrSub | even (length ts) = 1
+                 | otherwise        = -1
+
+mbound :: Bounded a => a -> a
+mbound x = maxBound
+
+
+-----------------------------------------------------------------------------------------------
 
 data J a = Jst a | I Int -- Just a value or an Int
            -- Usually a plain value is better than an Int because succ,pred is faster than doing toEnum.fromEnum
@@ -226,19 +344,18 @@ v :: (Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b) => Int -> J a -> J b
 v fz z = if (isJst z) && (toEnum fz) /= (mb z) then Jst (toEnum fz) else I fz
 
 ------------------------------------------------------------------------------------------------------------
--- The following functions are explained in the Monad Reader No. 20
--- They basically build up a similar pattern like the pred-functions later, but with added support for reaching boundaries
+-- The following functions build up a similar pattern like the pred-functions later, but with added support for reaching boundaries
 -- (assuming that one usually enumerates beginning with 0)
 -- example for reaching the boundary (True,True,True) :  enumFrom (False,False,False)
 ------------------------------------------------------------------------------------------------------------
 
 succ2 :: ( Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b) =>
          Int -> Bool -> (J a,J b) -> (J a,J b)
-succ2 fz s (y,z)
-  | (minB y) && (minB z) = (Jst (succ minBound), Jst minBound) -- (1,0) starting with an asymmetry
-  | (minB y) && (not (minB z)) = ( if ((isJst z) && (toEnum fz) == (mb z)) || not (isJst z)
-                                   then I (fz+1) else Jst (toEnum (fz+1))             , Jst minBound)
-  | otherwise = (pre y, suc z)
+succ2 fy s (x,y)
+  | (minB x) && (minB y) = (Jst (succ minBound), Jst minBound) -- (1,0) starting with an asymmetry
+  | (minB x) && (not (minB y)) = ( if ((isJst y) && (toEnum fy) == (mb y)) || not (isJst y)
+                                   then I (fy+1) else Jst (toEnum (fy+1)), Jst minBound)
+  | otherwise = (pre x, suc y)
 
 
 succ3 :: ( Enum a, Enum b, Enum c, Eq a, Eq b, Eq c, Bounded a, Bounded b, Bounded c) =>
@@ -440,6 +557,7 @@ from14Tuple (a,b,c,d,e,f,g,h,i,j,k,l,m,n) =
 from15Tuple (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) =
   ((((((((((((((Jst a,Jst b),Jst c),Jst d),Jst e),Jst f),Jst g),Jst h),Jst i),Jst j),Jst k),Jst l),Jst m),Jst n),Jst o)
 
+
 --------------------------------------------------------------------------------
 instance (Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b) => Enum (a, b) where 
 --------------------------------------------------------------------------------
@@ -466,7 +584,7 @@ instance (Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b) => Enum (a, b) where
 
   toEnum n = (\[a,b] -> (toEnum a, toEnum b)) (te 2 n)
 
-  fromEnum (a,b) = fe [fromEnum a, fromEnum b]
+  fromEnum (a,b) = feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b)] True
 
   enumFrom t2 | t2 == (maxBound,maxBound) = [(maxBound,maxBound)]
               | otherwise                 = t2 : (enumFrom (succ t2))
@@ -506,7 +624,7 @@ instance (Enum a, Enum b, Enum c,
 
   toEnum n = (\[a,b,c] -> (toEnum a, toEnum b, toEnum c)) (te 3 n)
 
-  fromEnum (a,b,c) = fe [fromEnum a, fromEnum b, fromEnum c]
+  fromEnum (a,b,c) = feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c)] True
 
   enumFrom t3 | t3 == (maxBound,maxBound,maxBound) = [(maxBound,maxBound,maxBound)]
               | otherwise                          = t3 : (enumFrom (succ t3))
@@ -551,7 +669,8 @@ instance (Enum a, Enum b, Enum c, Enum d,
 
   toEnum n = (\[a,b,c,d] -> (toEnum a, toEnum b, toEnum c, toEnum d)) (te 4 n)
 
-  fromEnum (a,b,c,d) = fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d]
+  fromEnum (a,b,c,d) = feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b),
+                            (fromEnum c, fEmb c), (fromEnum d, fEmb d)] True
 
   enumFrom t4 | t4 == (maxBound,maxBound,maxBound,maxBound) = [(maxBound,maxBound,maxBound,maxBound)]
               | otherwise                                   = t4 : (enumFrom (succ t4))
@@ -602,7 +721,8 @@ instance (Enum a, Enum b, Enum c, Enum d, Enum e,
 
   toEnum n = (\[a,b,c,d,e] -> (toEnum a, toEnum b, toEnum c, toEnum d, toEnum e)) (te 5 n)
 
-  fromEnum (a,b,c,d,e) = fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e]
+  fromEnum (a,b,c,d,e) = feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b),
+                              (fromEnum c, fEmb c), (fromEnum d, fEmb d), (fromEnum e, fEmb e)] True
 
   enumFrom t5 | t5 == (maxBound,maxBound,maxBound,maxBound,maxBound)
                    = [(maxBound,maxBound,maxBound,maxBound,maxBound)]
@@ -660,8 +780,9 @@ instance (Enum a, Enum b, Enum c, Enum d, Enum e, Enum f,
 
   toEnum n = (\[a,b,c,d,e,f] -> (toEnum a, toEnum b, toEnum c, toEnum d, toEnum e, toEnum f)) (te 6 n)
 
-  fromEnum (a,b,c,d,e,f) = fe [fromEnum a, fromEnum b, fromEnum c,
-                               fromEnum d, fromEnum e, fromEnum f]
+  fromEnum (a,b,c,d,e,f) = feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c),
+                                (fromEnum d, fEmb d), (fromEnum e, fEmb e), (fromEnum f, fEmb f)] True
+
 
   enumFrom t6 | t6 == (maxBound,maxBound,maxBound,maxBound,maxBound,maxBound) =
                      [(maxBound,maxBound,maxBound,maxBound,maxBound,maxBound)]
@@ -733,8 +854,9 @@ instance (Enum a, Enum b, Enum c, Enum d, Enum e, Enum f, Enum g,
   toEnum n = (\[a,b,c,d,e,f,g] ->
               (toEnum a, toEnum b, toEnum c, toEnum d, toEnum e, toEnum f, toEnum g)) (te 7 n)
 
-  fromEnum (a,b,c,d,e,f,g) = fe [fromEnum a, fromEnum b, fromEnum c,
-                                 fromEnum d, fromEnum e, fromEnum f, fromEnum g]
+  fromEnum (a,b,c,d,e,f,g) =
+      feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c),
+           (fromEnum d, fEmb d), (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g)] True
 
 -------------------------------------------------------------------------------------
 instance (Enum a, Enum b, Enum c, Enum d, Enum e, Enum f, Enum g, Enum h,
@@ -804,8 +926,10 @@ instance (Enum a, Enum b, Enum c, Enum d, Enum e, Enum f, Enum g, Enum h,
               (toEnum a, toEnum b, toEnum c, toEnum d,
                toEnum e, toEnum f, toEnum g, toEnum h)) (te 8 n)
 
-  fromEnum (a,b,c,d,e,f,g,h) = fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d,
-                                   fromEnum e, fromEnum f, fromEnum g, fromEnum h]
+  fromEnum (a,b,c,d,e,f,g,h) =
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d),
+        (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h)] True
+
 
 ---------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,
@@ -878,8 +1002,11 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,
               (toEnum a, toEnum b, toEnum c, toEnum d,
                toEnum e, toEnum f, toEnum g, toEnum h, toEnum i)) (te 9 n)
 
-  fromEnum (a,b,c,d,e,f,g,h,i) = fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d,
-                                     fromEnum e, fromEnum f, fromEnum g, fromEnum h, fromEnum i]
+  fromEnum (a,b,c,d,e,f,g,h,i) =
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d),
+        (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h),
+        (fromEnum i, fEmb i)] True
+
 
 ----------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
@@ -960,8 +1087,10 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
               (toEnum a, toEnum b, toEnum c, toEnum d, toEnum e,
                toEnum f, toEnum g, toEnum h, toEnum i, toEnum j)) (te 10 n)
 
-  fromEnum (a,b,c,d,e,f,g,h,i,j) = fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e,
-                                       fromEnum f, fromEnum g, fromEnum h, fromEnum i, fromEnum j]
+  fromEnum (a,b,c,d,e,f,g,h,i,j) =
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d),
+        (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h),
+        (fromEnum i, fEmb i), (fromEnum j, fEmb j)] True
 
 -------------------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,Enum k,
@@ -1049,8 +1178,10 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
               (toEnum a, toEnum b, toEnum c, toEnum d, toEnum e,
                toEnum f, toEnum g, toEnum h, toEnum i, toEnum j, toEnum k)) (te 11 n)
 
-  fromEnum (a,b,c,d,e,f,g,h,i,j,k) = fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e,
-                                         fromEnum f, fromEnum g, fromEnum h, fromEnum i, fromEnum j, fromEnum k]
+  fromEnum (a,b,c,d,e,f,g,h,i,j,k) =
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d),
+        (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h),
+        (fromEnum i, fEmb i), (fromEnum j, fEmb j), (fromEnum k, fEmb k)] True
 
 ------------------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,Enum k,Enum l,
@@ -1155,8 +1286,9 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
                toEnum g, toEnum h, toEnum i, toEnum j, toEnum k, toEnum l)) (te 12 n)
 
   fromEnum (a,b,c,d,e,f,g,h,i,j,k,l) =
-                     fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e, fromEnum f,
-                         fromEnum g, fromEnum h, fromEnum i, fromEnum j, fromEnum k, fromEnum l]
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d),
+        (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h),
+        (fromEnum i, fEmb i), (fromEnum j, fEmb j), (fromEnum k, fEmb k), (fromEnum l, fEmb l)] True
 
 ------------------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,Enum k,Enum l,Enum m,
@@ -1266,8 +1398,10 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
                toEnum g, toEnum h, toEnum i, toEnum j, toEnum k, toEnum l, toEnum m)) (te 13 n)
 
   fromEnum (a,b,c,d,e,f,g,h,i,j,k,l,m) =
-                     fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e, fromEnum f,
-                         fromEnum g, fromEnum h, fromEnum i, fromEnum j, fromEnum k, fromEnum l, fromEnum m]
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d),
+        (fromEnum e, fEmb e), (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h),
+        (fromEnum i, fEmb i), (fromEnum j, fEmb j), (fromEnum k, fEmb k), (fromEnum l, fEmb l),
+        (fromEnum m, fEmb m)] True
 
 ------------------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,Enum k,Enum l,Enum m,Enum n,
@@ -1383,8 +1517,9 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
                toEnum h, toEnum i, toEnum j, toEnum k, toEnum l, toEnum m, toEnum n)) (te 14 n)
 
   fromEnum (a,b,c,d,e,f,g,h,i,j,k,l,m,n) =
-                     fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e, fromEnum f, fromEnum g,
-                         fromEnum h, fromEnum i, fromEnum j, fromEnum k, fromEnum l, fromEnum m, fromEnum m]
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d), (fromEnum e, fEmb e),
+        (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h), (fromEnum i, fEmb i), (fromEnum j, fEmb j),
+        (fromEnum k, fEmb k), (fromEnum l, fEmb l), (fromEnum m, fEmb m), (fromEnum n, fEmb n)] True
 
 -------------------------------------------------------------------------------------------------------------------
 instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,Enum k,Enum l,Enum m,Enum n,Enum o,
@@ -1504,5 +1639,10 @@ instance (Enum a,Enum b,Enum c,Enum d,Enum e,Enum f,Enum g,Enum h,Enum i,Enum j,
                toEnum h, toEnum i, toEnum j, toEnum k, toEnum l, toEnum m, toEnum n, toEnum o)) (te 15 n)
 
   fromEnum (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) =
-         fe [fromEnum a, fromEnum b, fromEnum c, fromEnum d, fromEnum e, fromEnum f, fromEnum g,
-             fromEnum h, fromEnum i, fromEnum j, fromEnum k, fromEnum l, fromEnum m, fromEnum n, fromEnum o]
+   feb [(fromEnum a, fEmb a), (fromEnum b, fEmb b), (fromEnum c, fEmb c), (fromEnum d, fEmb d), (fromEnum e, fEmb e),
+        (fromEnum f, fEmb f), (fromEnum g, fEmb g), (fromEnum h, fEmb h), (fromEnum i, fEmb i), (fromEnum j, fEmb j),
+        (fromEnum k, fEmb k), (fromEnum l, fEmb l), (fromEnum m, fEmb m), (fromEnum n, fEmb n), (fromEnum o, fEmb o)] True
+
+fEmb a = fromEnum $ mbound a
+-- fEmb a = fromEnum (if mb > (maxBound :: Int) then (maxBound :: Int) else mb) -- fromEnum of the maximum value the type can have, but not bigger than Int
+-- where mb = mbound a                                                           -- because feb takes Ints as arguments

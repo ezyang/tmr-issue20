@@ -458,10 +458,9 @@ from which \verb|d| tetrahedra (as many as the tuple has dimensions) have to be 
 hypertetrahedra have to be added again (\verb|addOrSub|) in an alternating fashion:
 
 \begin{Verbatim}
--- To Do: Find the error
 feb :: [(Int,Int)] -> Bool -> Int
 feb [(x,b)] _ = x
-feb xs start  = sum (map intersection comb)  -- (summedSizes d (if start then s else s2) )
+feb xs start  = sum (map intersection comb)
               + recursion
   where
     recursion | start = feb xs False
@@ -469,27 +468,27 @@ feb xs start  = sum (map intersection comb)  -- (summedSizes d (if start then s 
               | otherwise = 0
     ys = map fst xs
     bs = map snd xs
-    l = (length ys) - 1
-    d | start = l
+    l = (length ys) - 1        -- 2
+    d | start = l              -- 2
       | otherwise = l-1
-    s  = foldr (+) 0 ys
-    s2 = foldr (+) 0 (tail ys)
-    comb :: [[Int]]
-    comb | start     = concat $ map (\x -> combinationsOf x [0..l]) [0..2]
+    s  = foldr (+) 0 ys        -- 6
+    s2 = foldr (+) 0 (tail ys) -- 4
+    comb :: [[Int]]                   -- [[],[0],[1],[2],[0,1],[0,2],[1,2]]
+    comb | start     = concat $ map (\x -> combinationsOf x [0..l]) [0..2] 
          | otherwise = concat $ map (\x -> combinationsOf x [0..l]) [0..l]
     intersection ts = addOrSub * tbs
       where
-            -- intersections with the special tetrahedron from the higher dimension that 
-            -- was projected one dimension lower to the origin
-            -- (and is bounded by s - the boundary of the dimension that was set to zero)
-        tbs | start       = if (s-sumBs)         > 0 then summedSizes d (s-1-sumBs) else 0
-            | 0 `elem` ts = if (s2-sumSpecialBs) > 0 then summedSizes d (s2-1-sumSpecialBs) else 0
-            | otherwise   = if (s2-sumBs)        > 0 then summedSizes d (s2-1-sumBs) else 0
-        tetra 0 = 0
-        tetra i = bs!!i
-        sumBs | null ts = -1
-              | otherwise = sum (map (bs!!) ts)
-        sumSpecialBs = sum (map tetra ts)
+        tbs | start       = if s -sumBs      > 0 then summedSizes d (s-sumBs)       else 0
+            | 0 `elem` ts = if s3-sumSpecial > 0 then summedSizes d (s3-sumSpecial) else 0
+            | otherwise   = if s2-sumBs      > 0 then summedSizes d (s2-sumBs)      else 0
+        sumBs | null ts = 0
+              | otherwise = sum (map (\x -> x + 1) (map (bs!!) ts))
+        sumSpecial = sum (map tetra ts)
+        tetra 0 = 0 -- because the special tetrahedron starts at 0
+        tetra i = (bs!!i)+1
+        specialTetra = s - (head bs) -- size of special tetrahedron (begins a zero)
+        s3 | s2 <= specialTetra = s2
+           | otherwise          = specialTetra
         addOrSub | even (length ts) = 1
                  | otherwise        = -1
 \end{Verbatim}
