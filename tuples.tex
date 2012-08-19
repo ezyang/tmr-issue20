@@ -451,29 +451,60 @@ we get $\binom{5}{2} = 10$ intersections:
 [[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
 \end{Verbatim}
 
-In higher dimensions it seems that all intersections of 2 hypertretrahedra exist but three or more hypertetrahedra are not intersecting in more than one point.
+In higher dimensions it seems that all intersections of 2 hypertretrahedra exist but 
+three or more hypertetrahedra are not intersecting in more than one point.
 
 \subsection{fromEnum with boundaries}
-In the bounded case \verb|fromEnum| is calculated nearly in the same way as in the previous sections. Looking again at figure \ref{enum3bounded} there is a top hyperplane below which the other hyperplanes are summed up. They form the base hypertetrahedron from which \verb|d| tetrahedra (as many as the tuple has dimensions) have to be subtracted (\verb|sum (map intersection xs)|) and because they also intersect between each other hypertetrahedra have to be added again (\verb|(sum intersection2)|):
+In the bounded case \verb|fromEnum| is calculated nearly in the same way as in the 
+previous sections. Looking again at figure \ref{enum3bounded} there is a top hyperplane 
+below which the other hyperplanes are summed up. They form the base hypertetrahedron 
+from which \verb|d| tetrahedra (as many as the tuple has dimensions) have to be subtracted 
+(\verb|sum (map intersection comb)|) and because they also intersect between each other 
+hypertetrahedra have to be added again in an alternating fashion (\verb|addOrSub|):
 
 \begin{Verbatim}
-fe [(x,b)] = x
-fe xs start = ( (summedSizes (length xs) s)
-               - (sum (map intersection xs))
-               + (sum intersection2) )
-        + (fe (tail xs) false)
-  where s = foldr (+) 0 (x:xs)
-        intersection (x,b) = if s > b then summedSizes (length xs) (s-b)
-                                      else 0
-        intersection2 = map (\[x,y] -> inter (xs!!x) (xs!!y) )
-                            (combinationsOf 2 [0..((length xs)-1)]))
-        inter (_,b0) (_,b1) = if s > b0 + b1
-                                then summedSizes (length xs) (s-b0-b1)
-                                else 0
+feb :: [(Int,Int)] -> Bool -> Int
+feb [(x,b)] _ = x
+feb xs start  = sum (map intersection comb)
+              + recursion
+  where
+    recursion | start = feb xs False
+              | d > 0 = feb (tail xs) False -- start == False && d>0
+              | otherwise = 0
+    ys = map fst xs
+    bs = map snd xs
+    l = (length ys) - 1
+    d | start = l
+      | otherwise = l-1
+    s  = foldr (+) 0 ys
+    s2 = foldr (+) 0 (tail ys)
+    comb :: [[Int]]
+    comb | start     = concat $ map (\x -> combinationsOf x [0..l]) [0..2] 
+         | otherwise = concat $ map (\x -> combinationsOf x [0..l]) [0..l]
+    intersection ts = addOrSub * tbs
+      where
+        tbs | start       = if s -sumBs      > 0 then summedSizes d (s-sumBs)       else 0
+            | 0 `elem` ts = if s3-sumSpecial > 0 then summedSizes d (s3-sumSpecial) else 0
+            | otherwise   = if s2-sumBs      > 0 then summedSizes d (s2-sumBs)      else 0
+        sumBs | null ts = 0
+              | otherwise = sum (map (\x -> x + 1) (map (bs!!) ts))
+        sumSpecial = sum (map tetra ts)
+        tetra 0 = 0 -- because the special tetrahedron starts at 0
+        tetra i = (bs!!i)+1
+        specialTetra = s - (head bs) -- size of special tetrahedron (begins a zero)
+        s3 | s2 <= specialTetra = s2
+           | otherwise          = specialTetra
+        addOrSub | even (length ts) = 1
+                 | otherwise        = -1
 \end{Verbatim}
 
-In the upper code we have to introduce the bool argument \verb|start| to cope with a strange effect. Although our experiment showed that there are only intersections of at most 2 hypertetrahedra, this is only true in the beginning. Once we project the tuple to one dimension below, there are more intersections.
-Consider this example: In 4 dimensions we have to subtract 4 hypertetrahedra. These hypetretrahedra are the original 4d enumeration, translated in each of the 4 dimensions respectively. \eg
+In the upper code we have to introduce the bool argument \verb|start| to cope with a strange effect.
+Although our experiment showed that there are only intersections of at most 2 hypertetrahedra,
+this is only true in the beginning. Once we project the tuple to one dimension below,
+there are more intersections.
+Consider this example: In 4 dimensions we have to subtract 4 hypertetrahedra.
+These hypetretrahedra are the original 4d enumeration, translated in each of the
+4 dimensions respectively. \eg
 \begin{Verbatim}
 (1,0,0,0)
 (0,1,0,0)
@@ -481,29 +512,52 @@ Consider this example: In 4 dimensions we have to subtract 4 hypertetrahedra. Th
 (0,0,0,1)
 \end{Verbatim}
 
-This 4d enumeration consists of repeated 3d enumerations. If we are only interested in the last 3d object in 4d space (the hyperplane that belongs to the sum of all digits), we get four 3d objects in 4d space. How do they look like? We can project them on dimension lower by setting one dimension to zero. Three 3d objects are still translated, but one is set to the origin. So the 3d objects are in every of the 4 corners of a normal 3d-tretrahedron. That is one tetrahedron more than in right part of figure \ref{enum3bounded}. But does this mean that if we start with a 10 dimensional tuple, the plane in 2d has a very complicated shape? Fortunately with every dimension we go lower the hypertetrahedron that is at the origin is parallel to the enumeration and therefore does not influence the intersections at the top hyperplane where we go next. But instead of only at most 2 hypertetrahedra intersecting, all hyperplanes intersect. Try to imagine this with 4 hypertetrahedra in 4 corners and arbitrary sizes.
+This 4d enumeration consists of repeated 3d enumerations.
+If we are only interested in the last 3d object in 4d space (the hyperplane that belongs 
+to the sum of all digits), we get four 3d objects in 4d space. How do they look like? 
+We can project them one dimension lower by setting one dimension to zero.
+Three 3d objects are still translated, but one is set to the origin.
+So the 3d objects are in every of the 4 corners of a normal 3d-tretrahedron.
+That is one tetrahedron more than in right part of figure \ref{enum3bounded}.
+But does this mean that if we start with a 10 dimensional tuple, the plane in 2d has a
+very complicated shape? Fortunately with every dimension we go lower the hypertetrahedron 
+that is at the origin is parallel to the enumeration and therefore does not influence 
+the intersections at the top hyperplane where we go next. But instead of only at most 2 
+hypertetrahedra intersecting, all hyperplanes intersect. Try to imagine this in 3d with 4 
+tetrahedra in 4 corners and arbitrary sizes.
 
-%In the upper code you can see that the size of the boundaries and the hyperplane of the tuple are enough to calculate these intersections. Unfortunately the upper formula can not be used recusively and the function \verb|feSub| has to be introduced. The dimension below the one \verb|fe| has been called with can have intersections with more than two hypertretrahedra.
+\subsection{toEnum, succ and pred with boundaries}
+Now the only thing that is left is to implement the function \verb|toEnum| that has to be adjusted to the boundary case
+in the same way as we showed for \verb|fromEnum|.
+The functions \verb|succ| and \verb|pred| currently just run over the boundary by switching 
+to an Int representation and searching for the next tuple inside of the boundaries.
+But this might change as well as some speed improvements that have not been considered.
+The focus was on a correct implementation.
 
+\section{Previous work}
+The idea to enumerate tuples this way originated from my diploma thesis where I used an automata
+to generate tuples. When I started to make \verb|Enum|-instances for tuples it became 
+much more involved and seemed interesting enough to write an article about it.
+So far I could not find a reference mentioning the enumeration of tuples with 
+hyperplanes (\eg \cite{knuth}), but the field of mathematics and informatics is vast and 
+it may be called differently or it just was not considered worth spending time on.
 
-\subsection{toEnum with boundaries}
-
-\subsection{succ,pred}
-
-%\bay{We're done? Say so!}
-
-\section{Previous work and Conclusion}
-
-\cite{auth:tuple-gen}
-\cite{rationals}
-\cite{knuth}
-
-\bay{Maybe expand this paragraph a little bit, and make it more cohesive.}
-The idea to enumerate tuples this way is about year old. \bay{It may be safer to hedge bets by saying that you weren't aware of any prior work.} While writing \verb|Enum|-Instances it seemed interesting enough to write an article about it. So far I could not find a reference mentioning it (\eg\ Donald Knuth: Generating All Tuples and Permutations). I think it can save some time in combinatorial problems or when one has to chose an option among several possibilities, \eg\ in generating a user interface.
+\section{Future work and Conclusion}
+The problem of the long calculation time still remains. Going back to the example in the 
+introduction (reaching "Haskell" in an enumeration of 7-tuples) one could use syllables 
+instead of characters. For this there have to be list-like data types with Enum instances. 
+This should allow to set priorities which could be given by the user or found by a 
+fitness function. Then it should also be possible to fix values inside of a tuple and do 
+all kinds of filtering.
+The application I have in mind are user interfaces where one obviously has to make a lot 
+of decisions.
+Another interesting challenge would be to implement this algorithm in a typical imperative language.
+Finally I want to thank Edward Z. Yang for his patience and the helpful editing.
 
 \subsection{Appendix}
 
-The images were generated with \verb|collada-output| and \verb|diagrams|.
+The images were generated with the library \verb|collada-output| and blender for the 3d images 
+and \verb|diagrams| for the 2d-diagrams. Here is the code for one diagram:
 
 \begin{verbatim}
 main = B.writeFile "test.svg" $ toLazyByteString $
