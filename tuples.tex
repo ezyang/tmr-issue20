@@ -455,7 +455,7 @@ previous sections. Looking again at figure \ref{enum3bounded} there is a top hyp
 below which the other hyperplanes are summed up. They form the base hypertetrahedron 
 from which \verb|d| tetrahedra (as many as the tuple has dimensions) have to be subtracted 
 (\verb|sum (map intersection comb)|) and because they also intersect between each other 
-hypertetrahedra have to be added again (\verb|addOrSub|) in an alternating fashion:
+hypertetrahedra have to be added again in an alternating fashion (\verb|addOrSub|):
 
 \begin{Verbatim}
 feb :: [(Int,Int)] -> Bool -> Int
@@ -468,12 +468,12 @@ feb xs start  = sum (map intersection comb)
               | otherwise = 0
     ys = map fst xs
     bs = map snd xs
-    l = (length ys) - 1        -- 2
-    d | start = l              -- 2
+    l = (length ys) - 1
+    d | start = l
       | otherwise = l-1
-    s  = foldr (+) 0 ys        -- 6
-    s2 = foldr (+) 0 (tail ys) -- 4
-    comb :: [[Int]]                   -- [[],[0],[1],[2],[0,1],[0,2],[1,2]]
+    s  = foldr (+) 0 ys
+    s2 = foldr (+) 0 (tail ys)
+    comb :: [[Int]]
     comb | start     = concat $ map (\x -> combinationsOf x [0..l]) [0..2] 
          | otherwise = concat $ map (\x -> combinationsOf x [0..l]) [0..l]
     intersection ts = addOrSub * tbs
@@ -518,11 +518,12 @@ But does this mean that if we start with a 10 dimensional tuple, the plane in 2d
 very complicated shape? Fortunately with every dimension we go lower the hypertetrahedron 
 that is at the origin is parallel to the enumeration and therefore does not influence 
 the intersections at the top hyperplane where we go next. But instead of only at most 2 
-hypertetrahedra intersecting, all hyperplanes intersect. Try to imagine this with 4 
-hypertetrahedra in 4 corners and arbitrary sizes.
+hypertetrahedra intersecting, all hyperplanes intersect. Try to imagine this in 3d with 4 
+tetrahedra in 4 corners and arbitrary sizes.
 
 \subsection{toEnum, succ and pred with boundaries}
-The function \verb|toEnum| has to be adjusted in the same way as we showed for \verb|fromEnum|.
+Now the only thing that is left is to implement the function \verb|toEnum| that has to be adjusted to the boundary case
+in the same way as we showed for \verb|fromEnum|.
 The functions \verb|succ| and \verb|pred| currently just run over the boundary by switching 
 to an Int representation and searching for the next tuple inside of the boundaries.
 But this might change as well as some speed improvements that have not been considered.
@@ -546,12 +547,12 @@ all kinds of filtering.
 The application I have in mind are user interfaces where one obviously has to make a lot 
 of decisions.
 Another interesting challenge would be to implement this algorithm in a typical imperative language.
-To conclude I want to thank Edward Z. Yang for his patience and the helpful editing.
+Finally I want to thank Edward Z. Yang for his patience and the helpful editing.
 
 \subsection{Appendix}
 
-The images were generated with \verb|collada-output| and blender for the 3d images 
-and \verb|diagrams| for the 2d-diagrams.
+The images were generated with the library \verb|collada-output| and blender for the 3d images 
+and \verb|diagrams| for the 2d-diagrams. Here is the code for one diagram:
 
 \begin{verbatim}
 main = B.writeFile "test.svg" $ toLazyByteString $
