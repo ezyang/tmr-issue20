@@ -188,7 +188,7 @@ to5Tuple  ((((a,b),c),d),e)  = (a,b,c,d,e)
 Then \verb|succ| can be defined like this:
 \begin{Verbatim}
 succ fz s ((x,y),z)
- | y /= minBound && z == minBound = ((x, pred y), succ z)
+ | y /= minBound && z == minBound = ((x,pred y), succ z)
  | y == minBound && z == minBound = (succ fz False (x,y), z)
  | y /= minBound && z /= minBound = ((x,pred y), if s then succ z else toEnum (fz+1))
  | y == minBound && z /= minBound = (succ fz False (x,toEnum fz), minBound)
