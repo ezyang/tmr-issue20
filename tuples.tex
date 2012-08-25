@@ -401,8 +401,8 @@ Figure \ref{enum3bounded} shows boundaries in 3D where the enumeration planes in
   \label{enum3bounded}
 \end{figure}
 
-\subsection{Intersections of hypetretrahedra}
-To get an idea of how many intersections there are we generate a 5D-hypertretrahedron (\verb|all5s| is an enumeration from (0,0,0,0,0)):
+\subsection{Intersections of hypertetrahedra}
+To get an idea of how many intersections there are we generate a 5D-hypertetrahedron (\verb|all5s| is an enumeration from (0,0,0,0,0)):
 
 \begin{Verbatim}
 set5 :: Word8 -> [(Word8,Word8,Word8,Word8,Word8)]
@@ -420,7 +420,7 @@ combinationsOf k (x:xs) =
   map (x:) (combinationsOf (k-1) xs) ++ combinationsOf k xs
 \end{Verbatim}
 
-The following function returns sets of indices to hypertretrahedra where the index specifies in which dimension they were translated.
+The following function returns sets of indices to hypertetrahedra where the index specifies in which dimension they were translated.
 
 \begin{Verbatim}
 intersectionSets = concat $ map (\k -> combinationsOf k [0..4] ) [2..5]
@@ -450,7 +450,7 @@ we get $\binom{5}{2} = 10$ intersections:
 [[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
 \end{Verbatim}
 
-In higher dimensions it seems that all intersections of 2 hypertretrahedra exist but 
+In higher dimensions it seems that all intersections of 2 hypertetrahedra exist but 
 three or more hypertetrahedra are not intersecting in more than one point.
 
 \subsection{fromEnum with boundaries}
@@ -506,7 +506,7 @@ Although our experiment showed that there are only intersections of at most 2 hy
 this is only true in the beginning. Once we project the tuple to one dimension below,
 there are more intersections.
 Consider this example: In 4 dimensions we have to subtract 4 hypertetrahedra.
-These hypetretrahedra are the original 4D enumeration, translated in each of the
+These hypertetrahedra are the original 4D enumeration, translated in each of the
 4 dimensions respectively. \eg
 \begin{Verbatim}
 (1,0,0,0)
@@ -520,9 +520,9 @@ If we are only interested in the last 3D object in 4D space (the hyperplane that
 to the sum of all digits), we get four 3D objects in 4D space. How do they look like? 
 We can project them one dimension lower by setting one dimension to zero.
 Three 3D objects are still translated, but one is set to the origin.
-So the 3D objects are in every of the 4 corners of a normal 3D-tretrahedron.
+So the 3D objects are in every of the 4 corners of a normal 3D-tetrahedron.
 That is one tetrahedron more than in right part of figure \ref{enum3bounded}.
-But does this mean that if we start with a 10 dimensional tuple, the plane in 2D has a
+But does this mean that if we start with a 10-dimensional tuple, the plane in 2D has a
 very complicated shape? Fortunately with every dimension we go lower the hypertetrahedron 
 that is at the origin is parallel to the enumeration and therefore does not influence 
 the intersections at the top hyperplane where we go next. But instead of only at most 2 
