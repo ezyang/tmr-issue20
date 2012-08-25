@@ -13,12 +13,12 @@
 \begin{document}
 
 \begin{introduction}
-Enumeration means assigning an integer value to a structure or, looking at the Haskell Prelude, defining an Enum instance. There are Enum instances for basic types like Bool or Char. But why are there no Enum instances for tuples?  Given that the elements of a tuple are enumerable, the combination ought to be enumerable too. Unfortunately, it takes too long to \eg\ enumerate all 7-tuples of Chars to find ''Haskell''. Another problem is that the classic method (imagine a counter ticking upwards) lets the digits increase with different speed and is therefore unusable for combinatorial problems where you want a quick variation of every digit. The solution that people most of the time chose in such a situation is a random function. The problem with a random function (apart from not being side effect free) is that you never have the confidence of having examined at least a defined part of the search space exhaustively. Using an enumeration as we present here, you can halt the processing \eg\ in a proving system or a genetic algorithm, see how long it took to compute, add constraints, and continue with the assurance of not having missed something. In this article we will describe a method how to enumerate tuples in a fair manner that could be used in such cases.
+Enumeration means assigning an integer value to a structure or, looking at the Haskell Prelude, defining an Enum instance. There are Enum instances for basic types like Bool or Char. But why are there no Enum instances for tuples?  Given that the elements of a tuple are enumerable, the combination ought to be enumerable too. Unfortunately, it takes too long to \eg\ enumerate all 7-tuples of Chars to find ''Haskell''. Another problem is that the classic method (imagine a counter ticking upwards) makes the digits increase with different speed and is therefore unusable for combinatorial problems where you want a quick variation of every digit. The solution that people most of the time chose in such a situation is a random function. The problem with a random function (apart from not being side effect free) is that you never have the confidence of having examined at least a defined part of the search space exhaustively. Using an enumeration as we present here, you can halt the processing \eg\ in a proving system or a genetic algorithm, see how long it took to compute, add constraints, and continue with the assurance of not having missed a solution. In this article, we will describe a method how to enumerate tuples in a fair manner that could be used in such cases.
 \end{introduction}
 
 \subsection{Cartesian product of small sets}
 
-The most straight forward way to enumerate tuples is to generate all combinations of elements of (finite) sets like this:
+The most straightforward way to enumerate tuples is to generate all combinations of elements of (finite) sets like this:
 \begin{Verbatim}
 cartProd (set:sets) = let cp = cartProd sets
                       in [x:xs | x <- set, xs <- cp]
@@ -63,14 +63,14 @@ There is another way to enumerate tuples that every computer scientist learns wh
 
 %\bay{I like these two sentences. :-)}
 The next question, typically raised in an exercise course, is how to enumerate 3-tuples.
-While everybody is thinking hard about a path through three dimensional space, somebody suggests to use the 2-tuples as a new axis and do the same diagonalization again. This is better than the former solution, %\bay{Might be clearer to explicitly say what the formal solution is.}
-because it allows infinite sets in the digits (here $\mathbb{N}$), but there are many more 2-tuples  than single values ($O(x^2)$ against $O(x)$, $x$ being the size of each set at a digit), which again results in an unfair distribution (see the left picture of Figure \ref{enum3} that shows the path that is biased towards one axis). Doing this repeatedly results in distributions where one digit grows with $O(x^3)$ for 4-tuples, $O(x^4)$ for 5-tuples.
+While everybody is thinking hard about a path through three dimensional space, somebody suggests to use the 2-tuples as a new axis and do the same diagonalization again. This gets the job done, %\bay{Might be clearer to explicitly say what the formal solution is.}
+because it allows infinite sets in the digits (here $\mathbb{N}$), but is unfair: there are many more 2-tuples  than single values ($O(x^2)$ against $O(x)$, $x$ being the size of each set at a digit). The result is an unfair distribution (see the left picture of Figure \ref{enum3} that shows the path that is biased towards one axis). To make matters worse, doing this trick repeatedly results in distributions where one digit grows with $O(x^3)$ for 4-tuples, $O(x^4)$ for 5-tuples.
 
 This unfairness can be avoided in 4-tuples, generally $2^n$-tuples, and at least be made less severe by choosing tuples for both axes, %\bay{e.g. a balanced binary tree}
 but it still leaves the non-$2^n$-tuples with an unfair distribution.  %\bay{I'm not sure, but there might also be something wrong with the balanced tree approach.}
 
 \subsection{Diagonals are Hyperplanes}
-If you look again at the diagonals of the enumeration of 2-tuples then you can observe that a diagonal (\eg\ $ [ (0,4), (1,3), (2,2), (3,1), (4,0) ])$ always consists of tuples whose sum of digits is constant:
+If you look again at the diagonals of the enumeration of 2-tuples, you can observe that a diagonal (\eg\ $ [ (0,4), (1,3), (2,2), (3,1), (4,0) ])$ always consists of tuples whose sum of digits is constant:
 $  [ (x,y)  \mid  x+y  = c ], c \in \mathbb{N}. $
 The same idea can be applied to 3-tuples. The right picture of Figure \ref{enum3} shows an enumeration path where the sum of the digits stay constant for an enumeration plane:
 \[  [ (x,y,z)  \mid  x+y+z  = c ], c \in \mathbb{N}. \]
@@ -82,19 +82,19 @@ The same idea can be applied to 3-tuples. The right picture of Figure \ref{enum3
   \label{enum3}
 \end{figure}
 
-The idea can be generally stated as grouping tuples by the distance to the origin with a norm. Then these tuples can be enumerated by arranging them monotonically increasing. Instead of planes one could imagine to use sphere surfaces. But it is probably much harder to calculate the n-th tuple in this case (and this is necessary as we will see later to make a proper Enum instance).
+The idea can be generally stated as grouping tuples by the distance to the origin with a norm. Then these tuples can be enumerated by arranging them monotonically increasing. Instead of planes, one could imagine to use sphere surfaces, though it is probably much harder to calculate the n-th tuple in this case (and this is necessary as we will see later to make a proper Enum instance).
 
 The enumeration with planes in the right picture of Figure \ref{enum3} generates tuples with a fair distribution of changes in the digits. It is especially fair in the beginning. An enumeration of n-tuples switches every digit once in the first n+1 values. For 3 tuples it is for example:
 \begin{Verbatim}
 [(0,0,0), (1,0,0), (0,1,0), (0,0,1), ...]
 \end{Verbatim}
-For higher values it becomes unfairer but other solutions (like hyperspheres) will maybe have much more complicated algorithms and formulas.
+For higher values it becomes unfairer, though other solutions (like hyperspheres) may have much more complicated algorithms and formulas.
 %\bay{Opportunity for more rigor! Or rigor mortis; your choice.}
-While the 3D enumeration uses planes, in higher dimensions hyperplanes have to be used. Thinking about this it becomes obvious that diagonals in 2D are hyperplanes as a hyperplane is a $(n-1)$-dimensional subset of a $n$-dimensional space that divides the space in two.
+While the 3D enumeration uses planes, in higher dimensions hyperplanes have to be used. In fact, diagonals in 2D are hyperplanes, since hyperplanes are a $(n-1)$-dimensional subset of a $n$-dimensional space that divides the space in two.
 
 \section{Enum Instances}
 %\bay{Signpost here. What are we doing now? What's the plan?}
-The first experiments of this enumeration algorithm generated a list of tuples of Ints. Ideally, we would like to replace Ints with arbitrary types as long as they can be enumerated. That of course also includes tuples itself. Haskell has a very nice feature called typeclass that permit the nesting of arbitrary tuples and values whose type have an \verb|Enum| instance. Take for example the \verb|Enum| instance for 2-tuples:
+The first experiments of this enumeration algorithm generated a list of tuples of natural numbers. Ideally, we would like to replace natural numbers with arbitrary types as long as they can be enumerated. That of course also includes tuples itself. Haskell has a very nice feature called typeclass that permit the nesting of arbitrary tuples and values whose type have an \verb|Enum| instance. Take for example the \verb|Enum| instance for 2-tuples:
 
 \begin{Verbatim}
 instance (Enum a, Enum b, Eq a, Eq b, Bounded a, Bounded b)
@@ -111,7 +111,7 @@ This is an example for an arbitrary nesting, with arbitrary starting values, tha
 \end{Verbatim}
 
 
-A type that should be enumerable can be made an instance of the \verb|Enum| typeclass by defining at least two functions:
+A type that is enumerable can be made an instance of the \verb|Enum| typeclass by defining at least two functions:
 \begin{Verbatim}
     toEnum           :: Int -> a
 \end{Verbatim}
@@ -130,14 +130,14 @@ The following functions are defined with \verb|toEnum| and \verb|fromEnum|, but 
     enumFromThenTo   :: a -> a -> a -> [a]   -- [n,n'..m]
 \end{Verbatim}
 
-In our case we will overwrite \verb|succ| (the successor in the enumeration) and \verb|pred| (the predecessor), because they can be calculated more quickly than the default implementation:
+In our case, we will overwrite \verb|succ| (the successor in the enumeration) and \verb|pred| (the predecessor), because they can be calculated more quickly than the default implementation:
 \begin{Verbatim}
 succ = toEnum . (`plusInt` oneInt)  . fromEnum
 \end{Verbatim}
 
 \section{succ, pred}
 %\bay{The next sentence is unclear.}
-In order to understand the following code take a look at the right picture  of Figure \ref{enum3}. Changes happen when a 0 is reached in the tuple. Because enumeration of arbitrary types should be possible, 0 is replaced by minBound. Instead of looking at a tuple it is faster to look only at the important digits: %\bay{I wonder if you can make this code look prettier by using guards or a match on equalities: \verb|match (a == minBound, b == minBound, c == minBound)|}\tkv{but for maximum speed one should check as few digits as possible. I think it can't be done prettier.}
+In order to understand the following code, it's worth keeping the image Figure \ref{enum3} in your head. Changes happen when a 0 is reached in the tuple. Because enumeration of arbitrary types should be possible, 0 is replaced by minBound. Instead of looking at a tuple it is faster to look only at the important digits: %\bay{I wonder if you can make this code look prettier by using guards or a match on equalities: \verb|match (a == minBound, b == minBound, c == minBound)|}\tkv{but for maximum speed one should check as few digits as possible. I think it can't be done prettier.}
 \small
 \begin{Verbatim}
 succ (a,b,c) =
@@ -155,7 +155,7 @@ succ (a,b,c) =
     fc = fromEnum c
 \end{Verbatim}
 The last tuple generates diagonals and every \verb|else| in the first half of this code generates a higher dimensional hyperplane.
-The line \verb|(toEnum (fc+1), minBound, minBound)| makes a switch to a new hyperplane, that is one bigger in the sum of digits than the last hyperplane. Because the types in the tuple can be different from each other \verb|fromEnum c| and \verb|toEnum (fc+1)| have to be used instead of \verb|succ| and \verb|pred|. The function \verb|pred| for 3-tuples is implemented similarly:
+The line \verb|(toEnum (fc+1), minBound, minBound)| makes a switch to a new hyperplane, that is one bigger in the sum of digits than the last hyperplane. Because the types in the tuple can be different from each other, \verb|fromEnum c| and \verb|toEnum (fc+1)| have to be used instead of \verb|succ| and \verb|pred|. The function \verb|pred| for 3-tuples is implemented similarly:
 
 \begin{Verbatim}
   pred (x,y,z) =
@@ -176,10 +176,10 @@ Here the line \verb|(minBound, minBound, toEnum (fx-1))| makes a switch to a low
 
 %\bay{Not an editing comment per se, but if this journal was space constrained, this is the section I would cut.}\tkv{I hoped you could tell me if this is a good solution}
 
-The function \verb|succ| could be defined for the other tuples in the same way, but this is a lot of typing for 15-tuples (the biggest tuple that is allowed). 
+The function \verb|succ| could be defined for the other tuples in the same way, but this is a lot of typing for 15-tuples (the biggest tuple for which there exist typeclass instances in the base libraries of Haskell).
 There is a pattern in the tuple that is produced when a certain pattern of zero or non-zero values in an inbound tuple occurs.
 One can come up with functions that do the same as the upper \verb|succ| function when seeing an $n$-tuple as a list.
-But a tuple can have all kinds of types and therefore is not compatible with an ordinary list. What to use? A heterogeneous list? One can also use a trick that transforms a tuple into a finite list-like structure and back:
+But a tuple can have all kinds of types and therefore cannot be encoded as ordinary lists. What to use? A heterogeneous list? One can also use a trick that transforms a tuple into a finite list-like structure and back:
 
 \begin{Verbatim}
 to5Tuple  ((((a,b),c),d),e)  = (a,b,c,d,e)
@@ -194,15 +194,15 @@ succ fz s ((x,y),z)
  | y == minBound && z /= minBound = (succ fz False (x,toEnum fz), minBound)
 \end{Verbatim}
 Here \verb|y| and \verb|z| should be imagined as single values while \verb|x| can be the list-like structure. 
-Unfortunately the upper code gives a type error in Haskell (Occurs check: cannot construct the infinite type: t0 = (t0, a0)), which is understandable because the compiler can't know that this nesting terminates without a termination analyzer. In the expression \verb|((a,b),c)|  the value \verb|a| cannot stand for another tuple \eg\ \verb|(((d,e),b),c)| and the compiler does not know that we are not constructing an infinite type.
-So we just define \verb|succ| for all tuples, like this:
+Unfortunately the upper code gives a type error in Haskell: ``Occurs check: cannot construct the infinite type: t0 = (t0, a0).'' This is understandable, since the compiler can't know that this nesting terminates without a termination analyzer. In the expression \verb|((a,b),c)|  the value \verb|a| must not stand for another tuple \eg\ \verb|(((d,e),b),c)|; the compiler does not know that we are not constructing an infinite type.
+ We can hack our way around this by defining \verb|succ| for all tuples, like this:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \fbox{succ5} :: ( Enum a, Enum b, Enum c, Eq a, Eq b, Eq c,
            Bounded a, Bounded b, Bounded c) =>
          Int -> Bool -> ((\fbox{((a,b),c)},d),e) -> ((\fbox{((a,b),c)},d),e)
 \fbox{succ5} fz s ((x,y),z)
-| y /= minBound && z == minBound = ((x, pred y), succ z)
+| y /= minBound && z == minBound = ((x,pred y), succ z)
 | y == minBound && z == minBound =  (\fbox{succ4} fz False (x,y), z)
 | y /= minBound && z /= minBound =((x,pred y), if s then succ z else toEnum (fz+1))
 | y == minBound && z /= minBound =  (\fbox{succ4} fz False (x,toEnum fz), minBound)
@@ -214,7 +214,7 @@ I haven't found an easy way to do the same with \verb|pred|, because the last va
 
 \section {The size of enumeration hyperplanes}
 
-The sizes of the enumeration hyperplanes are needed in order to assign numbers to tuples (\verb|toEnum|) or to find the place of a tuple in an enumeration  (\verb|fromEnum|).  From the right picture of Figure \ref{enum3} it can be seen that the 2D-hyperplanes consist of 1D-hyperplanes (diagonals).  Generally an $n$-dimensional space is enumerated with $(n-1)$-dimensional hyperplanes. These hyperplanes are again enumerated by $(n-2)$-dimensional hyperplanes, and so on. The size of an $n$-dimensional enumeration hyperplane can be deduced by looking at the two and three dimensional case.
+The sizes of the enumeration hyperplanes are needed in order to assign numbers to tuples (\verb|toEnum|) or to find the place of a tuple in an enumeration  (\verb|fromEnum|).  From the right picture of Figure \ref{enum3}, it can be seen that the 2D-hyperplanes consist of 1D-hyperplanes (diagonals).  Generally an $n$-dimensional space is enumerated with $(n-1)$-dimensional hyperplanes. These hyperplanes are again enumerated by $(n-2)$-dimensional hyperplanes, and so on. The size of an $n$-dimensional enumeration hyperplane can be deduced by looking at the two and three dimensional case.
 
 The size of our 2D-hyperplane (a plane of diagonals) is a well known problem that Gauß solved at the age of nine:
 
@@ -322,11 +322,11 @@ Using \verb|fromEnum| at every digit of the tuple, a general function \verb|fe| 
   fromEnum (a,b,c) = fe [fromEnum a, fromEnum b, fromEnum c]
 \end{Verbatim}
 
-To understand how \verb|fe| works recall that a hyperplane consists of all tuples whose sum of digits is constant. For the upper 3-tuple there is one 2D-plane that is located at the sum of the three integers. All the hyperplanes below this one have to be summed up. To calculate a tuple's position inside the 1d-hyperplane (diagonal) of this plane, the plane is projected to a lower dimension by setting one coordinate to zero. Instead of planes in 3D we now have diagonals in 2D. The sum of the tuple values of this smaller tuple give us again a hyperplane and the  hyperplane-sizes below have to be added to the overall sum. This process ends with a position inside of a 1d-line.
+To understand how \verb|fe| works, recall that a hyperplane consists of all tuples whose sum of digits is constant. For the upper 3-tuple there is one 2D-plane that is located at the sum of the three integers. All the hyperplanes below this one have to be summed up. To calculate a tuple's position inside the 1D-hyperplane (diagonal) of this plane, the plane is projected to a lower dimension by setting one coordinate to zero. Instead of planes in 3D, we now have diagonals in 2D. The sum of the tuple values of this smaller tuple give us again a hyperplane and the  hyperplane-sizes below have to be added to the overall sum. This process ends with a position inside of a 1D-line.
 
-The decision which dimension to set to zero is a degree of freedom but it has to be used consistently with \verb|toEnum|, \verb|succ| and \verb|pred| obviously. There are two ways to do this in 2D, three ways in 3D, generally $n$ ways in an $n$-dimensional space. %\bay{I don't think this is strictly true; setting one coordinate to zero corresponds to projecting onto that plane; but there are infinitely many planes and thus infinitely many projections.  In the discrete case, many of these may not be interesting, but it is a thought.}
+The decision of which dimension to set to zero is a degree of freedom, but the choice must be made consistently in \verb|toEnum|, \verb|succ| and \verb|pred|. There are two ways to do this in 2D, three ways in 3D, generally $n$ ways in an $n$-dimensional space. %\bay{I don't think this is strictly true; setting one coordinate to zero corresponds to projecting onto that plane; but there are infinitely many planes and thus infinitely many projections.  In the discrete case, many of these may not be interesting, but it is a thought.}
 
-In the last section we saw how to calculate the size of the $n$th enumeration hyperplane of a $d$-dimensional space. The function \verb|fe| uses lists of these sizes and an increasingly larger sum of hyperplanes:
+In the last section, we saw how to calculate the size of the $n$th enumeration hyperplane of a $d$-dimensional space. The function \verb|fe| uses lists of these sizes and an increasingly larger sum of hyperplanes:
 
 \begin{Verbatim}
 ssizes d = [ sum (take n sizes) | n <- [1..] ]
@@ -351,7 +351,7 @@ fe (x:xs) = ( summedSizes (length xs) (foldr (+) 0 (x:xs)) ) + (fe xs)
 \end{Verbatim}
 
 \subsection {toEnum }
-To calculate \verb|toEnum|, we have to invert the upper process. If \verb|toEnum| gets the argument \verb|n|, and the tuple has dimension $d$, then we search for where $n$ is located between the sums of hyperplanes by summarizing the  smaller hyperplanes until \verb|n| is reached and continue with the lower dimensions. But instead of values for each tuple position we get sums of subtuple values. To see how to extract values at each position from the sums, look again at the example of a 3-tuple: To get \verb|a1|, it is enough to know the two sums \verb|(a1+b1+c1)| and \verb|(b1+c1)| and calculate the difference:
+To calculate \verb|toEnum|, we have to invert the upper process. If \verb|toEnum| gets the argument \verb|n| and the tuple has dimension $d$, then we search for where $n$ is located between the sums of hyperplanes by summarizing the  smaller hyperplanes until \verb|n| is reached and continue with the lower dimensions. But, instead of values for each tuple position, we get sums of subtuple values. To see how to extract values at each position from the sums, look again at the example of a 3-tuple: To get \verb|a1|, it is enough to know the two sums \verb|(a1+b1+c1)| and \verb|(b1+c1)| and calculate the difference:
 
 \begin{Verbatim}
 differences :: [Int] -> [Int]
@@ -359,7 +359,7 @@ differences [x] = [x]
 differences (x:y:ys) = (x-y) : (differences (y:ys))
 \end{Verbatim}
 
-But first we calculate each of these sums (like the one belonging to \verb|a1+b1+c1|), put them in the list \verb|planes| and also remember the \verb|rest| for the next round:
+But first, we calculate each of these sums (like the one belonging to \verb|a1+b1+c1|), put them in the list \verb|planes| and also remember the \verb|rest| for the next round:
 
 \begin{Verbatim}
 hplanes :: Int -> ([Int],Int) -> ([Int],Int)
@@ -383,7 +383,7 @@ te dim n = differences $ reverse $ fst $ foldr hplanes ([],n) [1..dim]
 
 
 \section{Reaching boundaries}
-Until now only tuples with large sets were enumerated where it takes a long time to reach boundaries. But if tuples with Bools are enumerated (or with only four elements like in figure \ref{enum2bounded}), boundaries are quickly reached. Notice that in figure \ref{enum2bounded} the diagonals are enumerated from bottom right to top left and only half of the last line is subtracted. For non-quadratic rectangles it is also easier to subtract triangular shapes than to calulate the red area (especially in higher dimensions as we see later).
+Until now only tuples with large sets were enumerated where it takes a long time to reach boundaries. But if tuples with Bools are enumerated (or with only four elements like in figure \ref{enum2bounded}), boundaries are quickly reached. Notice that in figure \ref{enum2bounded} the diagonals are enumerated from bottom right to top left and only half of the last line is subtracted. For non-quadratic rectangles it is also easier to subtract triangular shapes than to calculate the red area (especially in higher dimensions as we see later).
 
 \begin{figure}[htbp]
   \centering
@@ -392,7 +392,7 @@ Until now only tuples with large sets were enumerated where it takes a long time
   \label{enum2bounded}
 \end{figure}
 
-Figure \ref{enum3bounded} shows boundaries in 3D where the enumeration planes in 3D form a tetrahedron starting at the origin. From this base tetrahedron three tetrahedra have to be subtracted that are translated by the size of the boundary in the respective dimension (also try to imagine a book shape instead of a cube in the picture). The intersections of these three tetrahedra make it necessary to add again three smaller tetrahedra that start at two added boundaries. In the former sections we could see a pattern from the 2D to the 3D case and deduce a general pattern. There seems to be no obvious pattern in this case, as we don't know how hypertetrahedra intersect in higher dimensions.
+Figure \ref{enum3bounded} shows boundaries in 3D where the enumeration planes in 3D form a tetrahedron starting at the origin. From this base tetrahedron, we must subtract three tetrahedra translated by the size of the boundary in the respective dimension (also try to imagine a book shape instead of a cube in the picture). The intersections of these three tetrahedra make it necessary to add again three smaller tetrahedra that start at two added boundaries. In the former sections, we could see a pattern from the 2D to the 3D case and deduce a general pattern. There seems to be no obvious pattern in this case, as we don't know how hypertetrahedra intersect in higher dimensions.
 
 \begin{figure}[htbp]
   \centering
@@ -411,7 +411,7 @@ set510 = set5 10
 \end{Verbatim}
 
 Then we translate this hypertetrahedron by the same length in each dimensions respectively and look at all combinations of intersections.
-The library Hasklell-for-maths gives us a function that generates all subsets of size k:
+The library haskell-for-maths gives us a function that generates all subsets of size $k$:
 
 \begin{Verbatim}
 combinationsOf 0 _ = [[]]
@@ -450,12 +450,12 @@ we get $\binom{5}{2} = 10$ intersections:
 [[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
 \end{Verbatim}
 
-In higher dimensions it seems that all intersections of 2 hypertetrahedra exist but 
-three or more hypertetrahedra are not intersecting in more than one point.
+In higher dimensions it seems that all intersections of 2 hypertetrahedra exist, but
+three or more hypertetrahedra never intersect at more than one point.
 
 \subsection{fromEnum with boundaries}
 In the bounded case, \verb|fromEnum| is calculated nearly in the same way as in the 
-previous sections. Looking again at figure \ref{enum3bounded}, there is a top hyperplane 
+previous sections. Looking again at Figure \ref{enum3bounded}, there is a top hyperplane 
 below which the other hyperplanes are summed up. They form the base hypertetrahedron 
 from which \verb|d| tetrahedra (as many as the tuple has dimensions) have to be subtracted 
 (\verb|sum (map intersection comb)|) and because they also intersect between each other 
@@ -502,12 +502,12 @@ feb xs start  = sum (map intersection comb)
 \end{Verbatim}
 
 In the upper code we have to introduce the bool argument \verb|start| to cope with a strange effect.
-Although our experiment showed that there are only intersections of at most 2 hypertetrahedra,
+Although our experiment showed that there are only intersections of at most two hypertetrahedra,
 this is only true in the beginning. Once we project the tuple to one dimension below,
 there are more intersections.
-Consider this example: In 4 dimensions we have to subtract 4 hypertetrahedra.
+Consider this example: in four dimensions we have to subtract four hypertetrahedra.
 These hypertetrahedra are the original 4D enumeration, translated in each of the
-4 dimensions respectively. \eg
+four dimensions respectively, \eg
 \begin{Verbatim}
 (1,0,0,0)
 (0,1,0,0)
@@ -517,20 +517,20 @@ These hypertetrahedra are the original 4D enumeration, translated in each of the
 
 This 4D enumeration consists of repeated 3D enumerations.
 If we are only interested in the last 3D object in 4D space (the hyperplane that belongs 
-to the sum of all digits), we get four 3D objects in 4D space. How do they look like? 
+to the sum of all digits), we get four 3D objects in 4D space. What do they look like?
 We can project them one dimension lower by setting one dimension to zero.
 Three 3D objects are still translated, but one is set to the origin.
-So the 3D objects are in every of the 4 corners of a normal 3D-tetrahedron.
-That is one tetrahedron more than in right part of figure \ref{enum3bounded}.
-But does this mean that if we start with a 10-dimensional tuple, the plane in 2D has a
-very complicated shape? Fortunately with every dimension we go lower the hypertetrahedron 
-that is at the origin is parallel to the enumeration and therefore does not influence 
-the intersections at the top hyperplane where we go next. But instead of only at most 2 
-hypertetrahedra intersecting, all hyperplanes intersect. Try to imagine this in 3D with 4 
-tetrahedra in 4 corners and arbitrary sizes.
+So the 3D objects are in each of the four corners of a normal 3D-tetrahedron.
+That is one tetrahedron more than in right part of Figure \ref{enum3bounded}.
+Does this mean that if we start with a 10-dimensional tuple, the plane in 2D has a
+very complicated shape? Fortunately, with every dimension we go, the lower hypertetrahedron 
+that is at the origin is parallel to the enumeration and does not influence 
+the intersections at the top hyperplane where we go next. Instead of only at most two 
+hypertetrahedra intersecting, all hyperplanes intersect. Try to imagine this in 3D with four 
+tetrahedra in four corners and arbitrary sizes.
 
 \subsection{toEnum, succ and pred with boundaries}
-The only thing that is left is to implement the function \verb|toEnum| adjusted to the boundary case
+The only thing that is left is to implement the function \verb|toEnum|, adjusted to the boundary case
 in the same way as we showed for \verb|fromEnum|.
 The functions \verb|succ| and \verb|pred| currently just run over the boundary by switching
 to an Int representation and searching for the next tuple inside of the boundaries.
